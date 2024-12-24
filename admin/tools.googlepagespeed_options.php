@@ -246,7 +246,7 @@ elseif ($DB->GetErrorMessage() != "")
 				rel=
 			</td>
 			<td class="tools-gps-filed__value">
-				<select id="tags-link" name="STRING_PUBLIC_PART[0][ROLE]">
+				<select name="STRING_PUBLIC_PART[0][ROLE]">
 					<? foreach ($roleLinkCssStyles as $keyRole => $valueRole) { ?>
 						<option value="<?= $valueRole ?>"><?= $valueRole ?></option>
 					<? } ?>
@@ -256,7 +256,7 @@ elseif ($DB->GetErrorMessage() != "")
 				as=
 			</td>
 			<td class="tools-gps-filed__value">
-				<select id="tags-link" name="STRING_PUBLIC_PART[0][TYPE]">
+				<select name="STRING_PUBLIC_PART[0][TYPE]">
 					<? foreach ($typeLinkCssStyles as $keyType => $valueType) { ?>
 						<option value="<?= $valueType ?>"><?= $valueType ?></option>
 					<? } ?>
@@ -285,7 +285,7 @@ elseif ($DB->GetErrorMessage() != "")
 					rel=
 				</td>
 				<td class="tools-gps-filed__value">
-					<select id="tags-link" name="STRING_PUBLIC_PART[<?= $keyLinkCss ?>][ROLE]">
+					<select name="STRING_PUBLIC_PART[<?= $keyLinkCss ?>][ROLE]">
 						<? foreach ($roleLinkCssStyles as $keyRole => $valueRole) { ?>
 							<option value="<?= $valueRole ?>" <? if ($valueLinkCss["ROLE"] == $valueRole) echo 'selected' ?>><?= $valueRole ?></option>
 						<? } ?>
@@ -295,7 +295,7 @@ elseif ($DB->GetErrorMessage() != "")
 					as=
 				</td>
 				<td class="tools-gps-filed__value">
-					<select id="tags-link" name="STRING_PUBLIC_PART[<?= $keyLinkCss ?>][TYPE]">
+					<select name="STRING_PUBLIC_PART[<?= $keyLinkCss ?>][TYPE]">
 						<? foreach ($typeLinkCssStyles as $keyType => $valueType) { ?>
 							<option value="<?= $valueType ?>" <? if ($valueLinkCss["TYPE"] == $valueType) echo 'selected' ?>><?= $valueType ?></option>
 						<? } ?>
@@ -331,7 +331,7 @@ elseif ($DB->GetErrorMessage() != "")
 				<input type="hidden" name="CONNECTED_JS_SCRIPT[0][ID]" value="1" size="60">
 			</td>
 			<td class="tools-gps-filed__value">
-				<select id="tags-link" name="CONNECTED_JS_SCRIPT[0][ATTRIBUTE]">
+				<select name="CONNECTED_JS_SCRIPT[0][ATTRIBUTE]">
 					<? foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
 						<option value="<?= $valueAttribute ?>"><?= $valueAttribute ?></option>
 					<? } ?>
@@ -357,7 +357,7 @@ elseif ($DB->GetErrorMessage() != "")
 					<input type="hidden" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ID]" value="<?= $valueLinkJs['ID'] ?>" size="60">
 				</td>
 				<td class="tools-gps-filed__value">
-					<select id="tags-link" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ATTRIBUTE]">
+					<select name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ATTRIBUTE]">
 						<? foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
 							<option value="<?= $valueAttribute ?>" <? if ($valueLinkJs["ATTRIBUTE"] == $valueAttribute) echo 'selected' ?>><?= $valueAttribute ?></option>
 						<? } ?>
@@ -440,7 +440,7 @@ elseif ($DB->GetErrorMessage() != "")
 							rel=
 						</td>
 						<td class="tools-gps-filed__value">
-							<select id="tags-link" name="STRING_PUBLIC_PART[` + keyNextElement + `][ROLE]">
+							<select name="STRING_PUBLIC_PART[` + keyNextElement + `][ROLE]">
 								<? foreach ($roleLinkCssStyles as $keyRole => $valueRole) { ?>
 									<option value="<?= $valueRole ?>"><?= $valueRole ?></option>
 								<? } ?>
@@ -450,7 +450,7 @@ elseif ($DB->GetErrorMessage() != "")
 							as=
 						</td>
 						<td class="tools-gps-filed__value">
-							<select id="tags-link" name="STRING_PUBLIC_PART[` + keyNextElement + `][TYPE]">
+							<select name="STRING_PUBLIC_PART[` + keyNextElement + `][TYPE]">
 								<? foreach ($typeLinkCssStyles as $keyType => $valueType) { ?>
 									<option value="<?= $valueType ?>"><?= $valueType ?></option>
 								<? } ?>
@@ -472,7 +472,7 @@ elseif ($DB->GetErrorMessage() != "")
 							<input type="hidden" name="CONNECTED_JS_SCRIPT[` + keyNextElement + `][ID]" value="` + idNextElement + `" size="60">
 						</td>
 						<td class="tools-gps-filed__value">
-							<select id="tags-link" name="CONNECTED_JS_SCRIPT[` + keyNextElement + `][ATTRIBUTE]">
+							<select name="CONNECTED_JS_SCRIPT[` + keyNextElement + `][ATTRIBUTE]">
 								<? foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
 									<option value="<?= $valueAttribute ?>"><?= $valueAttribute ?></option>
 								<? } ?>
