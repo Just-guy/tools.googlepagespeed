@@ -408,7 +408,10 @@ elseif ($DB->GetErrorMessage() != "")
 		idNextElement,
 		keyNextElement,
 		randomNumber = '',
-		templateField = '';
+		templateField = '',
+		roleLinkCssStyles = <?= \Bitrix\Main\Web\Json::encode($roleLinkCssStyles); ?>,
+		typeLinkCssStyles = <?= \Bitrix\Main\Web\Json::encode($typeLinkCssStyles); ?>,
+		attributeLinkJsScripts = <?= \Bitrix\Main\Web\Json::encode($attributeLinkJsScripts); ?>;
 
 	document.addEventListener('click', (event) => {
 		if (event.target.classList.contains('tools-gps-filed__add')) {
@@ -440,21 +443,27 @@ elseif ($DB->GetErrorMessage() != "")
 							rel=
 						</td>
 						<td class="tools-gps-filed__value">
-							<select name="STRING_PUBLIC_PART[` + keyNextElement + `][ROLE]">
-								<? foreach ($roleLinkCssStyles as $keyRole => $valueRole) { ?>
-									<option value="<?= $valueRole ?>"><?= $valueRole ?></option>
-								<? } ?>
-							</select>
+							<select  name="STRING_PUBLIC_PART[` + keyNextElement + `][ROLE]">`;
+
+				roleLinkCssStyles.forEach((valueRole, keyRole, array) => {
+					templateField += `<option value="${valueRole}">${valueRole}</option>`
+				});
+
+				templateField +=
+					`</select>
 						</td>
 						<td class="tools-gps-filed__text">
 							as=
 						</td>
 						<td class="tools-gps-filed__value">
-							<select name="STRING_PUBLIC_PART[` + keyNextElement + `][TYPE]">
-								<? foreach ($typeLinkCssStyles as $keyType => $valueType) { ?>
-									<option value="<?= $valueType ?>"><?= $valueType ?></option>
-								<? } ?>
-							</select>
+							<select  name="STRING_PUBLIC_PART[` + keyNextElement + `][TYPE]">`;
+
+				typeLinkCssStyles.forEach((valueType, keyType, array) => {
+					templateField += `<option value="${valueType}">${valueType}</option>`
+				});
+
+				templateField +=
+					`</select>
 						</td>
 						<td class="tools-gps-filed__delete">
 							<input type="button" class="tools-gps-filed__delete-field adm-btn-delete" value="x">
@@ -472,11 +481,13 @@ elseif ($DB->GetErrorMessage() != "")
 							<input type="hidden" name="CONNECTED_JS_SCRIPT[` + keyNextElement + `][ID]" value="` + idNextElement + `" size="60">
 						</td>
 						<td class="tools-gps-filed__value">
-							<select name="CONNECTED_JS_SCRIPT[` + keyNextElement + `][ATTRIBUTE]">
-								<? foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
-									<option value="<?= $valueAttribute ?>"><?= $valueAttribute ?></option>
-								<? } ?>
-							</select>
+							<select  name="CONNECTED_JS_SCRIPT[` + keyNextElement + `][ATTRIBUTE]">`;
+
+				roleLinkCssStyles.forEach((valueAttribute, keyAttribute, array) => {
+					templateField += `<option value="${valueAttribute}">${valueAttribute}</option>`
+				});
+
+				templateField += `</select>
 						</td>
 						<td class="tools-gps-filed__text">
 							src=
