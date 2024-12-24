@@ -219,10 +219,6 @@ elseif ($DB->GetErrorMessage() != "")
 		</tr>
 	<? } ?>
 
-	<!--<tr class="heading">
-		<td colspan="2" valign="top" align="center">Файлы стилей, которым необходимо присвоить preload</td>
-	</tr>-->
-
 	<? $tabControl->BeginNextTab(); ?>
 
 	<? if (empty($arrayLinkCssStyles)) :
@@ -301,13 +297,9 @@ elseif ($DB->GetErrorMessage() != "")
 						<? } ?>
 					</select>
 				</td>
-				<? //if ($keyLinkCss != 0) : 
-				?>
 				<td class="tools-gps-filed__delete">
 					<input type="button" class="tools-gps-filed__delete-field adm-btn-delete" value="x">
 				</td>
-				<? //endif; 
-				?>
 			</tr>
 		<? } ?>
 	<? endif; ?>
@@ -369,13 +361,9 @@ elseif ($DB->GetErrorMessage() != "")
 				<td class="tools-gps-filed__value">
 					<input type="text" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][STRING_PUBLIC_PART]" value="<?= $valueLinkJs['STRING_PUBLIC_PART'] ?>" size="60">
 				</td>
-				<? //if ($keyLinkCss != 0) : 
-				?>
 				<td class="tools-gps-filed__delete">
 					<input type="button" class="tools-gps-filed__delete-field adm-btn-delete" value="x">
 				</td>
-				<? //endif; 
-				?>
 			</tr>
 		<? } ?>
 	<? endif; ?>
@@ -385,10 +373,6 @@ elseif ($DB->GetErrorMessage() != "")
 			<input type="button" class="tools-gps-filed__add adm-btn-save" data-container-button="link-js" value="Добавить url">
 		</td>
 	</tr>
-
-	<!--<tr class="heading">
-		<td colspan="2" valign="top" align="center">Файлы стилей, которым необходимо присвоить preload</td>
-	</tr>-->
 
 	<? $tabControl->BeginNextTab(); ?>
 
@@ -415,7 +399,6 @@ elseif ($DB->GetErrorMessage() != "")
 
 	document.addEventListener('click', (event) => {
 		if (event.target.classList.contains('tools-gps-filed__add')) {
-			//debugger
 			randomNumber = Math.random();
 			dataContainer = event.target.dataset.containerButton;
 			listFileds = document.querySelectorAll('[data-container=' + dataContainer + ']');
