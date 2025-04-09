@@ -39,7 +39,7 @@ class Main
 			}
 		}
 
-		if (!Main::thisRobot()) {
+		if (Main::thisRobot()) {
 			foreach ($arrayOptions as $valueOption) {
 				if ($valueOption['ACTIVE'] != 'Y' || $valueOption['OPTION_TYPE'] != 'regular-expression') continue;
 
