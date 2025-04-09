@@ -28,7 +28,7 @@ class Main
 
 		if (!empty($templateArrayLinksCss)) {
 			foreach ($templateArrayLinksCss as $value) {
-				if (preg_match('(' . $value['STRING_REGULAR_EXPRESSION'] . '[?][0-9]{0,})', $content, $url) && !empty($value['STRING_REGULAR_EXPRESSION'])) {
+				if (preg_match('(' . $value['STRING_REGULAR_EXPRESSION'] . '(\?\d+){0,})', $content, $url) && !empty($value['STRING_REGULAR_EXPRESSION'])) {
 					$arrayLinkCss[] = '<link href="' . $url[0] . '" rel="' . $value['ROLE'] . '" as="' . $value['TYPE'] . '">';
 				}
 			}
