@@ -22,9 +22,9 @@ class Main
 	{
 		$isAdmin = Context::getCurrent()->getRequest()->isAdminSection();
 
-		$templateArrayLinksCss = Main::getLinksCssStyles(["ACTIVE" => "Y"]);
-		$templateArrayLinksJS = Main::getLinksJsScripts(["ACTIVE" => "Y"]);
-		$arrayOptions = Main::getOptions();
+		$templateArrayLinksCss = self::getLinksCssStyles(["ACTIVE" => "Y"]);
+		$templateArrayLinksJS = self::getLinksJsScripts(["ACTIVE" => "Y"]);
+		$arrayOptions = self::getOptions();
 
 		if (!empty($templateArrayLinksCss)) {
 			foreach ($templateArrayLinksCss as $value) {
@@ -39,7 +39,7 @@ class Main
 			}
 		}
 
-		if (Main::thisRobot()) {
+		if (self::thisRobot()) {
 			foreach ($arrayOptions as $valueOption) {
 				if ($valueOption['ACTIVE'] != 'Y' || $valueOption['OPTION_TYPE'] != 'regular-expression') continue;
 
