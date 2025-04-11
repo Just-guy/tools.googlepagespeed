@@ -71,7 +71,8 @@ class Tools_googlepagespeed extends CModule
 					"<script(\s?| type=\W?text\/javascript\W?)>.\s*\(function\s?\(m,\s?e,\s?t,\s?r,\s?i,\s?k,\s?a\).*<\/script>",
 					"<noscript.*mc\.yandex\.ru.*\/noscript>"
 				]),
-				'OPTION_TYPE' => 'regular-expression'
+				'OPTION_TYPE' => 'regular-expression',
+				'LIMITATION' => 'for-gps-robot'
 			],
 			[
 				'ACTIVE' => 'N',
@@ -80,7 +81,8 @@ class Tools_googlepagespeed extends CModule
 				'OPTION_ACTION' => serialize([
 					"(<!-- Google tag \(gtag\.js\) -->\s?|\s?)<script\s?(async|'')\s?src=.*googletagmanager.*\/script>\s<script>\s?.*function gtag.*\/script>",
 				]),
-				'OPTION_TYPE' => 'regular-expression'
+				'OPTION_TYPE' => 'regular-expression',
+				'LIMITATION' => 'for-gps-robot'
 			],
 			[
 				'ACTIVE' => 'N',
@@ -90,7 +92,9 @@ class Tools_googlepagespeed extends CModule
 					"<!--\s?Google\s?Tag\s?Manager.*-->.*<!--\s?End\s?Google\s?Tag\s?Manager.*-->",
 					"<script\s?(async.*|'')\s?src=.*googletagmanager.*\/script>"
 				]),
-				'OPTION_TYPE' => 'regular-expression'
+				'OPTION_TYPE' => 'regular-expression',
+				'LIMITATION' => 'for-gps-robot'
+			],
 			],
 		];
 
@@ -100,7 +104,8 @@ class Tools_googlepagespeed extends CModule
 				"CODE_OPTION" => $valueOption['CODE_OPTION'],
 				"NAME_OPTION" => $valueOption['NAME_OPTION'],
 				"OPTION_ACTION" => $valueOption['OPTION_ACTION'],
-				'OPTION_TYPE' => $valueOption['OPTION_TYPE']
+				"OPTION_TYPE" => $valueOption['OPTION_TYPE'],
+				"LIMITATION" => $valueOption['LIMITATION']
 			]);
 		}
 

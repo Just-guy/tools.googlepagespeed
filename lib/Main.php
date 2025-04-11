@@ -15,7 +15,7 @@ class Main
 	public static function OnProlog() {}
 
 	public static function OnAfterEpilog() {}
-	
+
 	public static function OnBeforeEndBufferContent() {}
 
 	public static function OnEndBufferContent(&$content)
@@ -40,10 +40,13 @@ class Main
 			}
 		}
 
-		if (self::thisRobot()) {
-			foreach ($arrayOptions as $valueOption) {
-				if ($valueOption['ACTIVE'] != 'Y' || $valueOption['OPTION_TYPE'] != 'regular-expression') continue;
+		foreach ($arrayOptions as $valueOption) {
+			if ($valueOption['ACTIVE'] != 'Y') continue;
+			if ($valueOption["LIMITATION"] == 'for-gps-robot') {
+				if (!self::thisRobot()) continue;
+			}
 
+			if ($valueOption['OPTION_TYPE'] == 'regular-expression') {
 				$regularExpressionArray = unserialize(htmlspecialcharsback($valueOption['OPTION_ACTION']));
 
 				foreach ($regularExpressionArray as $regularExpression) {
@@ -51,6 +54,12 @@ class Main
 						$content = preg_replace('/' . $regularExpression . '/msU', '', $content);
 					}
 				}
+			}
+
+			if ($valueOption['OPTION_TYPE'] == 'function') {
+				$methodName  = htmlspecialcharsback($valueOption['OPTION_ACTION']);
+
+				self::$methodName($content);
 			}
 		}
 

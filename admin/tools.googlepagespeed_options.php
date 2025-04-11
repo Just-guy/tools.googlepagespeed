@@ -53,6 +53,7 @@ $tabControl = new CAdminTabControl("tabControl", $aTabs);
 $arrayLinkCssStyles = Tools\GooglePageSpeed\Main::getLinksCssStyles();
 $arrayLinkJsScripts = Tools\GooglePageSpeed\Main::getLinksJsScripts();
 $arrayOptions = Tools\GooglePageSpeed\Main::getOptions();
+$limitation = ['for-everyone' => 'Для всех', 'for-gps-robot' => 'Для робота Google PS'];
 $roleLinkCssStyles = ['preload', 'prefetch', 'preconnect', 'dns-prefetch', 'prerender'];
 $typeLinkCssStyles = ['style', 'script', 'font', 'fetch', 'image', 'track'];
 $attributeLinkJsScripts = ['async', 'defer'];
@@ -62,16 +63,17 @@ $active = '';
 if ($request["Update"]) {
 	// === GPS options
 	foreach ($request['OPTIONS'] as $keyOption => $valueOption) {
-		if ($arrayOptions[$keyOption]["ACTIVE"] === $valueOption["ACTIVE"]) continue;
+		if (empty($valueOption["ACTIVE"])) $valueOption["ACTIVE"] = "N";
 
-		$active = 'N';
-		if ($valueOption["ACTIVE"] != null) $active = 'Y';
+		if ($arrayOptions[$keyOption]["ACTIVE"] === $valueOption["ACTIVE"] && $arrayOptions[$keyOption]["LIMITATION"] === $valueOption["LIMITATION"]) continue;
 
 		Tools\GooglePageSpeed\GPSOptionsTable::update($arrayOptions[$keyOption]['ID'], [
-			"ACTIVE" => $active,
+			"ACTIVE" => $valueOption["ACTIVE"],
+			"LIMITATION" => $valueOption["LIMITATION"]
 		]);
 
 		$arrayOptions[$keyOption]["ACTIVE"] = $valueOption["ACTIVE"];
+		$arrayOptions[$keyOption]["LIMITATION"] = $valueOption["LIMITATION"];
 	}
 	// === GPS options
 
@@ -206,15 +208,23 @@ elseif ($DB->GetErrorMessage() != "")
 	<?= bitrix_sessid_post() ?>
 	<? $tabControl->Begin(); ?>
 
-
 	<? $tabControl->BeginNextTab(); ?>
 	<? $randomId = random_int(1, 999); ?>
 	<? foreach ($arrayOptions as $keyOption => $valueOption) { ?>
-		<tr>
-			<td width="50%"><?= $valueOption["NAME_OPTION"] ?></td>
-			<td width="50%">
+		<tr class="tools-gps-filed">
+			<td class="tools-gps-filed__active">
 				<input type="checkbox" name="OPTIONS[<?= $keyOption ?>][ACTIVE]" value="Y" size="60" <? if (!empty($valueOption['ACTIVE']) && $valueOption['ACTIVE'] == 'Y') echo 'checked' ?>>
-				<input type="hidden" name="OPTIONS[<?= $keyOption ?>][CODE_OPTION]" value="CUT_FOR_GOOGLE_PS" size="60">
+				<input type="hidden" name="OPTIONS[<?= $keyOption ?>][CODE_OPTION]" value="GOOGLE_PS_OPTION" size="60">
+			</td>
+			<td class="tools-gps-filed__name">
+				<?= $valueOption["NAME_OPTION"] ?>
+			</td>
+			<td class="tools-gps-filed__value">
+				<select name="OPTIONS[<?= $keyOption ?>][LIMITATION]">
+					<? foreach ($limitation as $keyLimitation => $valueLimitation) { ?>
+						<option value="<?= $keyLimitation ?>" <? if ($valueOption["LIMITATION"] == $keyLimitation) echo 'selected' ?>><?= $valueLimitation ?></option>
+					<? } ?>
+				</select>
 			</td>
 		</tr>
 	<? } ?>
@@ -512,6 +522,10 @@ elseif ($DB->GetErrorMessage() != "")
 	.tools-gps-filed__number,
 	.tools-gps-filed__active {
 		padding: 0;
+	}
+
+	.tools-gps-filed__name {
+		flex-basis: 325px;
 	}
 </style>
 <? require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/epilog_admin.php");

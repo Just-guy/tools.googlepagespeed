@@ -72,6 +72,12 @@ class GPSOptionsTable extends Entity\DataManager
 					'size' => 50
 				]
 			),
+			new Entity\StringField(
+				'LIMITATION',
+				[
+					'size' => 50
+				]
+			),
 		];
 	}
 
