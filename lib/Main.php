@@ -21,8 +21,8 @@ class Main
 
 	public static function OnEndBufferContent(&$content)
 	{
-		$isAdmin = Context::getCurrent()->getRequest()->isAdminSection();
-		if($isAdmin) continue;
+		//$isAdmin = Context::getCurrent()->getRequest()->isAdminSection();
+		//if($isAdmin) continue;
 		
 		$templateArrayLinksCss = self::getLinksCssStyles(["ACTIVE" => "Y"]);
 		$templateArrayLinksJS = self::getLinksJsScripts(["ACTIVE" => "Y"]);
