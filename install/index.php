@@ -95,6 +95,13 @@ class Tools_googlepagespeed extends CModule
 				'OPTION_TYPE' => 'regular-expression',
 				'LIMITATION' => 'for-gps-robot'
 			],
+			[
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'ELIMINATE_RESOURCES_THAT_BLOCK_DISPLAY',
+				'NAME_OPTION' => 'Устранить таблицы стилей, блокирующие рендеринг',
+				'OPTION_ACTION' => "eliminateResourcesThatBlockDisplay",
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone'
 			],
 		];
 

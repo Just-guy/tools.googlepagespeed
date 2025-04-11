@@ -9,6 +9,7 @@ use Bitrix\Main\Page\Asset;
 class Main
 {
 	static $module_id = "tools.googlepagespeed";
+	static $arrayEliminateResourcesThatBlock = "";
 
 	public static function OnPageStart() {}
 
@@ -69,6 +70,27 @@ class Main
 					$content = preg_replace('(src.*' . $value['STRING_REGULAR_EXPRESSION'] . '.*)', $value['ATTRIBUTE'] . ' ' . $arMatches[0], $content);
 				}
 			}
+		}
+	}
+
+	private static function getLinkForBlockingResources($content)
+	{
+		preg_match_all('/<link href="(.*)".*>/msU', $content, $matches);
+		return $matches;
+	}
+
+	public static function eliminateResourcesThatBlockDisplay(&$content)
+	{
+		$eliminateResourcesThatBlock = self::getLinkForBlockingResources($content);
+
+		if (empty($eliminateResourcesThatBlock)) return;
+
+		foreach ($eliminateResourcesThatBlock[1] as $value) {
+			self::$arrayEliminateResourcesThatBlock .= "<link href='" . $value . "' rel='preload' as='style'>\r\n";
+		}
+
+		if (!empty(self::$arrayEliminateResourcesThatBlock)) {
+			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayEliminateResourcesThatBlock, $content, 1);
 		}
 	}
 
