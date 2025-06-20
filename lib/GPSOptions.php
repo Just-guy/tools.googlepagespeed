@@ -63,7 +63,7 @@ class GPSOptionsTable extends Entity\DataManager
 			new Entity\StringField(
 				'OPTION_ACTION',
 				[
-					'size' => 255
+					'size' => 700
 				]
 			),
 			new Entity\StringField(
