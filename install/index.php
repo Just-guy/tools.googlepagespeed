@@ -90,7 +90,9 @@ class Tools_googlepagespeed extends CModule
 				'NAME_OPTION' => 'Вырезать скрипты Google Tag Manager',
 				'OPTION_ACTION' => serialize([
 					"<!--\s?Google\s?Tag\s?Manager.*-->.*<!--\s?End\s?Google\s?Tag\s?Manager.*-->",
-					"<script\s?(async.*|'')\s?src=.*googletagmanager.*\/script>"
+					"<script\s?(async.*|'')\s?src=.*googletagmanager.*\/script>",
+					"<script>\s*\(function\s*\([^)]*\)\s*{[^}]*'gtm\.start'[^}]*}\s*\)[^<]*<\/script>",
+					"<noscript>\s*<iframe.*googletagmanager.*iframe>\s*<\/noscript>"
 				]),
 				'OPTION_TYPE' => 'regular-expression',
 				'LIMITATION' => 'for-gps-robot'
