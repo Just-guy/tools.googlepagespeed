@@ -94,6 +94,27 @@ class Main
 		}
 	}
 
+	private static function getLinkForBlockingScripts($content)
+	{
+		preg_match_all('/<script src="(.*)".*><\/script>/msU', $content, $matches);
+		return $matches;
+	}
+
+	public static function eliminateScriptsThatBlockDisplay(&$content)
+	{
+		$eliminateStyleSheetsThatBlock = self::getLinkForBlockingScripts($content);
+
+		if (empty($eliminateStyleSheetsThatBlock)) return;
+
+		foreach ($eliminateStyleSheetsThatBlock[1] as $value) {
+			self::$arrayeliminateStyleSheetsThatBlock .= "<script async src='" . $value . "'></script>\r\n";
+		}
+
+		if (!empty(self::$arrayeliminateStyleSheetsThatBlock)) {
+			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayeliminateStyleSheetsThatBlock, $content, 1);
+		}
+	}
+
 	public static function getLinksCssStyles($filter = [])
 	{
 		// запрос к базе
