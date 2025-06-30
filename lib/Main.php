@@ -9,7 +9,7 @@ use Bitrix\Main\Page\Asset;
 class Main
 {
 	static $module_id = "tools.googlepagespeed";
-	static $arrayEliminateResourcesThatBlock = "";
+	static $arrayeliminateStyleSheetsThatBlock = "";
 
 	public static function OnPageStart() {}
 
@@ -73,24 +73,24 @@ class Main
 		}
 	}
 
-	private static function getLinkForBlockingResources($content)
+	private static function getLinkForBlockingStyleSheets($content)
 	{
 		preg_match_all('/<link href="(.*)".*>/msU', $content, $matches);
 		return $matches;
 	}
 
-	public static function eliminateResourcesThatBlockDisplay(&$content)
+	public static function eliminateStyleSheetsThatBlockDisplay(&$content)
 	{
-		$eliminateResourcesThatBlock = self::getLinkForBlockingResources($content);
+		$eliminateStyleSheetsThatBlock = self::getLinkForBlockingStyleSheets($content);
 
-		if (empty($eliminateResourcesThatBlock)) return;
+		if (empty($eliminateStyleSheetsThatBlock)) return;
 
-		foreach ($eliminateResourcesThatBlock[1] as $value) {
-			self::$arrayEliminateResourcesThatBlock .= "<link href='" . $value . "' rel='preload' as='style'>\r\n";
+		foreach ($eliminateStyleSheetsThatBlock[1] as $value) {
+			self::$arrayeliminateStyleSheetsThatBlock .= "<link href='" . $value . "' rel='preload' as='style'>\r\n";
 		}
 
-		if (!empty(self::$arrayEliminateResourcesThatBlock)) {
-			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayEliminateResourcesThatBlock, $content, 1);
+		if (!empty(self::$arrayeliminateStyleSheetsThatBlock)) {
+			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayeliminateStyleSheetsThatBlock, $content, 1);
 		}
 	}
 

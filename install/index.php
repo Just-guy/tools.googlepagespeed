@@ -99,9 +99,9 @@ class Tools_googlepagespeed extends CModule
 			],
 			[
 				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'ELIMINATE_RESOURCES_THAT_BLOCK_DISPLAY',
+				'CODE_OPTION' => 'ELIMINATE_STYLE_SHEETS_THAT_BLOCK_DISPLAY',
 				'NAME_OPTION' => 'Устранить таблицы стилей, блокирующие рендеринг',
-				'OPTION_ACTION' => "eliminateResourcesThatBlockDisplay",
+				'OPTION_ACTION' => "eliminateStyleSheetsThatBlockDisplay",
 				'OPTION_TYPE' => 'function',
 				'LIMITATION' => 'for-everyone'
 			],
