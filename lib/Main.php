@@ -107,7 +107,7 @@ class Main
 		if (empty($eliminateStyleSheetsThatBlock)) return;
 
 		foreach ($eliminateStyleSheetsThatBlock[1] as $value) {
-			self::$arrayeliminateStyleSheetsThatBlock .= "<script async src='" . $value . "'></script>\r\n";
+			self::$arrayeliminateStyleSheetsThatBlock .= "<script defer src='" . $value . "'></script>\r\n";
 		}
 
 		if (!empty(self::$arrayeliminateStyleSheetsThatBlock)) {
