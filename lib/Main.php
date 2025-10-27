@@ -119,7 +119,7 @@ class Main
 	public static function addLoadingLazyAttributeAllTagsImg(&$content)
 	{
 		$content = preg_replace(
-			'/(<img\b)((?:(?!loading=)[^>])*)(\/?>)/i',
+			'/(<img\b)((?:(?!\s(?:loading|fetchpriority|decoding)\s*=)[^>])*)(\/?>)/i',
 			'$1$2 loading="lazy"$3',
 			$content
 		);
