@@ -116,6 +116,15 @@ class Main
 		}
 	}
 
+	public static function addLoadingLazyAttributeAllTagsImg(&$content)
+	{
+		$content = preg_replace(
+			'/(<img\b)((?:(?!loading=)[^>])*)(\/?>)/i',
+			'$1$2 loading="lazy"$3',
+			$content
+		);
+	}
+
 	public static function getLinksCssStyles($filter = [])
 	{
 		// запрос к базе

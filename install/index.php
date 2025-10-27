@@ -113,6 +113,14 @@ class Tools_googlepagespeed extends CModule
 				'OPTION_TYPE' => 'function',
 				'LIMITATION' => 'for-everyone'
 			],
+			[
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'ADD_LOADING_LAZY_ATTRIBUTE_ALL_TAGS_IMG',
+				'NAME_OPTION' => 'Добавить атрибут loading="lazy" всем тэгам img',
+				'OPTION_ACTION' => "addLoadingLazyAttributeAllTagsImg",
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone'
+			],
 		];
 
 		foreach ($options as $valueOption) {
