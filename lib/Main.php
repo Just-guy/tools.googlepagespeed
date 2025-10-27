@@ -9,7 +9,8 @@ use Bitrix\Main\Page\Asset;
 class Main
 {
 	static $module_id = "tools.googlepagespeed";
-	static $arrayeliminateStyleSheetsThatBlock = "";
+	static $arrayEliminateStyleSheetsThatBlock = "";
+	static $arrayEliminateScriptsThatBlock = "";
 
 	public static function OnPageStart() {}
 
@@ -86,11 +87,11 @@ class Main
 		if (empty($eliminateStyleSheetsThatBlock)) return;
 
 		foreach ($eliminateStyleSheetsThatBlock[1] as $value) {
-			self::$arrayeliminateStyleSheetsThatBlock .= "<link href='" . $value . "' rel='preload' as='style'>\r\n";
+			self::$arrayEliminateStyleSheetsThatBlock .= "<link href='" . $value . "' rel='preload' as='style'>\r\n";
 		}
 
-		if (!empty(self::$arrayeliminateStyleSheetsThatBlock)) {
-			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayeliminateStyleSheetsThatBlock, $content, 1);
+		if (!empty(self::$arrayEliminateStyleSheetsThatBlock)) {
+			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayEliminateStyleSheetsThatBlock, $content, 1);
 		}
 	}
 
@@ -102,16 +103,16 @@ class Main
 
 	public static function eliminateScriptsThatBlockDisplay(&$content)
 	{
-		$eliminateStyleSheetsThatBlock = self::getLinkForBlockingScripts($content);
+		$eliminateScriptsThatBlock = self::getLinkForBlockingScripts($content);
 
-		if (empty($eliminateStyleSheetsThatBlock)) return;
+		if (empty($eliminateScriptsThatBlock)) return;
 
-		foreach ($eliminateStyleSheetsThatBlock[1] as $value) {
-			self::$arrayeliminateStyleSheetsThatBlock .= "<script defer src='" . $value . "'></script>\r\n";
+		foreach ($eliminateScriptsThatBlock[1] as $value) {
+			self::$arrayEliminateScriptsThatBlock .= "<script defer src='" . $value . "'></script>\r\n";
 		}
 
-		if (!empty(self::$arrayeliminateStyleSheetsThatBlock)) {
-			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayeliminateStyleSheetsThatBlock, $content, 1);
+		if (!empty(self::$arrayEliminateScriptsThatBlock)) {
+			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayEliminateScriptsThatBlock, $content, 1);
 		}
 	}
 
