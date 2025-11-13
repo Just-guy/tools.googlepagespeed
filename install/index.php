@@ -90,16 +90,34 @@ class Tools_googlepagespeed extends CModule
 				'NAME_OPTION' => 'Вырезать скрипты Google Tag Manager',
 				'OPTION_ACTION' => serialize([
 					"<!--\s?Google\s?Tag\s?Manager.*-->.*<!--\s?End\s?Google\s?Tag\s?Manager.*-->",
-					"<script\s?(async.*|'')\s?src=.*googletagmanager.*\/script>"
+					"<script\s?(async.*|'')\s?src=.*googletagmanager.*\/script>",
+					"<script>\s*\(function\s*\([^)]*\)\s*{[^}]*'gtm\.start'[^}]*}\s*\)[^<]*<\/script>",
+					"<noscript>\s*<iframe.*googletagmanager.*iframe>\s*<\/noscript>"
 				]),
 				'OPTION_TYPE' => 'regular-expression',
 				'LIMITATION' => 'for-gps-robot'
 			],
 			[
 				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'ELIMINATE_RESOURCES_THAT_BLOCK_DISPLAY',
+				'CODE_OPTION' => 'ELIMINATE_STYLE_SHEETS_THAT_BLOCK_DISPLAY',
 				'NAME_OPTION' => 'Устранить таблицы стилей, блокирующие рендеринг',
-				'OPTION_ACTION' => "eliminateResourcesThatBlockDisplay",
+				'OPTION_ACTION' => "eliminateStyleSheetsThatBlockDisplay",
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone'
+			],
+			[
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY',
+				'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
+				'OPTION_ACTION' => "eliminateScriptsThatBlockDisplay",
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone'
+			],
+			[
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'ADD_LOADING_LAZY_ATTRIBUTE_ALL_TAGS_IMG',
+				'NAME_OPTION' => 'Добавить атрибут loading="lazy" всем тэгам img',
+				'OPTION_ACTION' => "addLoadingLazyAttributeAllTagsImg",
 				'OPTION_TYPE' => 'function',
 				'LIMITATION' => 'for-everyone'
 			],

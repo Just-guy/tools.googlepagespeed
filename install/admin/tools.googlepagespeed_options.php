@@ -3,3 +3,4 @@
 } else {
 	require_once($_SERVER["DOCUMENT_ROOT"] . "/local/modules/tools.googlepagespeed/admin/tools.googlepagespeed_options.php");
 }
+

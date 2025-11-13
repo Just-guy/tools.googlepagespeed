@@ -9,7 +9,8 @@ use Bitrix\Main\Page\Asset;
 class Main
 {
 	static $module_id = "tools.googlepagespeed";
-	static $arrayEliminateResourcesThatBlock = "";
+	static $arrayEliminateStyleSheetsThatBlock = "";
+	static $arrayEliminateScriptsThatBlock = "";
 
 	public static function OnPageStart() {}
 
@@ -73,25 +74,55 @@ class Main
 		}
 	}
 
-	private static function getLinkForBlockingResources($content)
+	private static function getLinkForBlockingStyleSheets($content)
 	{
 		preg_match_all('/<link href="(.*)".*>/msU', $content, $matches);
 		return $matches;
 	}
 
-	public static function eliminateResourcesThatBlockDisplay(&$content)
+	public static function eliminateStyleSheetsThatBlockDisplay(&$content)
 	{
-		$eliminateResourcesThatBlock = self::getLinkForBlockingResources($content);
+		$eliminateStyleSheetsThatBlock = self::getLinkForBlockingStyleSheets($content);
 
-		if (empty($eliminateResourcesThatBlock)) return;
+		if (empty($eliminateStyleSheetsThatBlock)) return;
 
-		foreach ($eliminateResourcesThatBlock[1] as $value) {
-			self::$arrayEliminateResourcesThatBlock .= "<link href='" . $value . "' rel='preload' as='style'>\r\n";
+		foreach ($eliminateStyleSheetsThatBlock[1] as $value) {
+			self::$arrayEliminateStyleSheetsThatBlock .= "<link href='" . $value . "' rel='preload' as='style'>\r\n";
 		}
 
-		if (!empty(self::$arrayEliminateResourcesThatBlock)) {
-			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayEliminateResourcesThatBlock, $content, 1);
+		if (!empty(self::$arrayEliminateStyleSheetsThatBlock)) {
+			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayEliminateStyleSheetsThatBlock, $content, 1);
 		}
+	}
+
+	private static function getLinkForBlockingScripts($content)
+	{
+		preg_match_all('/<script src="(.*)".*><\/script>/msU', $content, $matches);
+		return $matches;
+	}
+
+	public static function eliminateScriptsThatBlockDisplay(&$content)
+	{
+		$eliminateScriptsThatBlock = self::getLinkForBlockingScripts($content);
+
+		if (empty($eliminateScriptsThatBlock)) return;
+
+		foreach ($eliminateScriptsThatBlock[1] as $value) {
+			self::$arrayEliminateScriptsThatBlock .= "<script defer src='" . $value . "'></script>\r\n";
+		}
+
+		if (!empty(self::$arrayEliminateScriptsThatBlock)) {
+			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayEliminateScriptsThatBlock, $content, 1);
+		}
+	}
+
+	public static function addLoadingLazyAttributeAllTagsImg(&$content)
+	{
+		$content = preg_replace(
+			'/(<img\b)((?:(?!\s(?:loading|fetchpriority|decoding)\s*=)[^>])*)(\/?>)/i',
+			'$1$2 loading="lazy"$3',
+			$content
+		);
 	}
 
 	public static function getLinksCssStyles($filter = [])
