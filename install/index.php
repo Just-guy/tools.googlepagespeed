@@ -105,14 +105,14 @@ class Tools_googlepagespeed extends CModule
 				'OPTION_TYPE' => 'function',
 				'LIMITATION' => 'for-everyone'
 			],
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY',
-				'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
-				'OPTION_ACTION' => "eliminateScriptsThatBlockDisplay",
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone'
-			],
+			//[
+			//	'ACTIVE' => 'N',
+			//	'CODE_OPTION' => 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY',
+			//	'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
+			//	'OPTION_ACTION' => "eliminateScriptsThatBlockDisplay",
+			//	'OPTION_TYPE' => 'function',
+			//	'LIMITATION' => 'for-everyone'
+			//],
 			[
 				'ACTIVE' => 'N',
 				'CODE_OPTION' => 'ADD_LOADING_LAZY_ATTRIBUTE_ALL_TAGS_IMG',
