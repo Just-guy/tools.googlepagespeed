@@ -6,10 +6,9 @@ use Bitrix\Main\Localization\Loc;													// пространство име
 Loc::loadMessages(__FILE__);															// подключение ланговых файлов
 
 $aMenu = array(																			// сформируем верхний пункт меню
-	'parent_menu' => 'global_menu_content',										// пункт меню в разделе Контент
-	'sort' => 1,																			// сортировка
+	'parent_menu' => 'global_menu_settings',										// пункт меню в разделе Контент
+	'sort' => 70,																			// сортировка
 	'text' => "Инструменты для Google PageSpeed",																			// название пункта меню
-	"items_id" => "menu_webforms",													// идентификатор ветви
 	"icon" => "form_menu_icon",														// иконка
 );			
 
