@@ -127,6 +127,8 @@ class Main
 
 	public static function getLinksCssStyles($filter = [])
 	{
+		$resultArray = [];
+
 		// запрос к базе
 		$result = ConnectedCssStyleTable::getList(
 			[
@@ -145,6 +147,8 @@ class Main
 
 	public static function getLinksJsScripts($filter = [])
 	{
+		$resultArray = [];
+
 		// запрос к базе
 		$result = ConnectedJsScriptTable::getList(
 			[
@@ -163,6 +167,8 @@ class Main
 
 	public static function getOptions()
 	{
+		$resultArray = [];
+		
 		// запрос к базе
 		$result = GPSOptionsTable::getList(
 			[
