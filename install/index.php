@@ -171,13 +171,6 @@ class Tools_googlepagespeed extends CModule
 	{
 		EventManager::getInstance()->registerEventHandler(
 			'main',
-			'OnPageStart',
-			$this->MODULE_ID,
-			'Tools\\GooglePageSpeed\\Main',
-			'OnPageStart'
-		);
-		EventManager::getInstance()->registerEventHandler(
-			'main',
 			'OnEndBufferContent',
 			$this->MODULE_ID,
 			'Tools\\GooglePageSpeed\\Main',
@@ -221,13 +214,6 @@ class Tools_googlepagespeed extends CModule
 
 	public function UnInstallEvents()
 	{
-		EventManager::getInstance()->unRegisterEventHandler(
-			'main',
-			'OnPageStart',
-			$this->MODULE_ID,
-			'Tools\\GooglePageSpeed\\Main',
-			'OnPageStart'
-		);
 		EventManager::getInstance()->unRegisterEventHandler(
 			'main',
 			'OnEndBufferContent',

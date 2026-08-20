@@ -12,14 +12,6 @@ class Main
 	static $arrayEliminateStyleSheetsThatBlock = "";
 	static $arrayEliminateScriptsThatBlock = "";
 
-	public static function OnPageStart() {}
-
-	public static function OnProlog() {}
-
-	public static function OnAfterEpilog() {}
-
-	public static function OnBeforeEndBufferContent() {}
-
 	public static function OnEndBufferContent(&$content)
 	{
 		//$isAdmin = Context::getCurrent()->getRequest()->isAdminSection();
