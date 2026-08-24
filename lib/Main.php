@@ -9,8 +9,6 @@ use Bitrix\Main\Page\Asset;
 class Main
 {
 	static $module_id = "tools.googlepagespeed";
-	static $arrayEliminateStyleSheetsThatBlock = "";
-	static $arrayEliminateScriptsThatBlock = "";
 
 	private const ALLOWED_OPTION_METHODS = [
 		'eliminateStyleSheetsThatBlockDisplay',
@@ -74,9 +72,7 @@ class Main
 
 		if (!empty($templateArrayLinksJS)) {
 			foreach ($templateArrayLinksJS as $value) {
-				if (preg_match('(src.*' . $value['STRING_REGULAR_EXPRESSION'] . '.*)', $content, $arMatches) && !empty($value['STRING_REGULAR_EXPRESSION'])) {
-					$content = preg_replace('(src.*' . $value['STRING_REGULAR_EXPRESSION'] . '.*)', $value['ATTRIBUTE'] . ' ' . $arMatches[0], $content);
-				}
+				self::addAttributeToMatchingScripts($content, $value);
 			}
 		}
 	}
@@ -124,53 +120,92 @@ class Main
 		);
 	}
 
-	private static function getLinkForBlockingStyleSheets($content)
+	/**
+	 * Вешает async/defer на открывающий <script src="...">, а не на кусок «src...».
+	 */
+	private static function addAttributeToMatchingScripts(&$content, array $value): void
 	{
-		preg_match_all('/<link href="(.*)".*>/msU', $content, $matches);
-		return $matches;
+		$pattern = (string)($value['STRING_REGULAR_EXPRESSION'] ?? '');
+		$attr = strtolower(trim((string)($value['ATTRIBUTE'] ?? '')));
+		if ($pattern === '' || ($attr !== 'async' && $attr !== 'defer')) {
+			return;
+		}
+
+		$content = preg_replace_callback(
+			'/<script\b[^>]*>/i',
+			static function ($match) use ($pattern, $attr) {
+				$tag = $match[0];
+				if (!preg_match('/\bsrc\s*=\s*("[^"]*"|\'[^\']*\')/i', $tag, $srcMatch)) {
+					return $tag;
+				}
+				if (!preg_match('/' . $pattern . '/', $srcMatch[1])) {
+					return $tag;
+				}
+				if (preg_match('/\b(?:async|defer)\b/i', $tag)) {
+					return $tag;
+				}
+
+				return preg_replace('/<script\b/i', '<script ' . $attr, $tag, 1);
+			},
+			$content
+		);
 	}
 
 	public static function eliminateStyleSheetsThatBlockDisplay(&$content)
 	{
-		$eliminateStyleSheetsThatBlock = self::getLinkForBlockingStyleSheets($content);
+		$content = preg_replace_callback(
+			'/<link\b[^>]*>/i',
+			static function ($match) {
+				$tag = $match[0];
+				if (!preg_match('/\brel\s*=\s*(["\']?)stylesheet\1/i', $tag)) {
+					return $tag;
+				}
+				if (preg_match('/\bmedia\s*=\s*(["\']?)print\1/i', $tag)) {
+					return $tag;
+				}
 
-		if (empty($eliminateStyleSheetsThatBlock)) return;
+				$deferred = preg_replace('/\smedia\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $tag);
+				$deferred = preg_replace('/\s*\/?>$/', ' media="print" onload="this.media=\'all\'"$0', $deferred);
 
-		foreach ($eliminateStyleSheetsThatBlock[1] as $value) {
-			self::$arrayEliminateStyleSheetsThatBlock .= "<link href='" . $value . "' rel='preload' as='style'>\r\n";
-		}
-
-		if (!empty(self::$arrayEliminateStyleSheetsThatBlock)) {
-			self::insertAfterOpeningHead($content, self::$arrayEliminateStyleSheetsThatBlock);
-		}
-	}
-
-	private static function getLinkForBlockingScripts($content)
-	{
-		preg_match_all('/<script src="(.*)".*><\/script>/msU', $content, $matches);
-		return $matches;
+				return $deferred . '<noscript>' . $tag . '</noscript>';
+			},
+			$content
+		);
 	}
 
 	public static function eliminateScriptsThatBlockDisplay(&$content)
 	{
-		$eliminateScriptsThatBlock = self::getLinkForBlockingScripts($content);
+		$content = preg_replace_callback(
+			'/<script\b[^>]*\bsrc\s*=[^>]*>/i',
+			static function ($match) {
+				$tag = $match[0];
+				if (preg_match('/\b(?:async|defer)\b/i', $tag)) {
+					return $tag;
+				}
 
-		if (empty($eliminateScriptsThatBlock)) return;
-
-		foreach ($eliminateScriptsThatBlock[1] as $value) {
-			self::$arrayEliminateScriptsThatBlock .= "<script defer src='" . $value . "'></script>\r\n";
-		}
-
-		if (!empty(self::$arrayEliminateScriptsThatBlock)) {
-			self::insertAfterOpeningHead($content, self::$arrayEliminateScriptsThatBlock);
-		}
+				return preg_replace('/<script\b/i', '<script defer', $tag, 1);
+			},
+			$content
+		);
 	}
 
 	public static function addLoadingLazyAttributeAllTagsImg(&$content)
 	{
-		$content = preg_replace(
-			'/(<img\b)((?:(?!\s(?:loading|fetchpriority|decoding)\s*=)[^>])*)(\/?>)/i',
-			'$1$2 loading="lazy"$3',
+		$isFirstImg = true;
+		$content = preg_replace_callback(
+			'/<img\b[^>]*>/i',
+			static function ($match) use (&$isFirstImg) {
+				$tag = $match[0];
+				if ($isFirstImg) {
+					$isFirstImg = false;
+					return $tag;
+				}
+				if (preg_match('/\b(?:loading|fetchpriority|decoding|data-src)\s*=/i', $tag)) {
+					return $tag;
+				}
+
+				return preg_replace('/<img\b/i', '<img loading="lazy"', $tag, 1);
+			},
 			$content
 		);
 	}
