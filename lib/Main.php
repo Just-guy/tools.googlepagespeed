@@ -30,8 +30,7 @@ class Main
 			}
 
 			if (!empty($arrayLinkCss)) {
-				$stringLinkCss = implode("\r\n", $arrayLinkCss);
-				$content = preg_replace('/(<head.*?>)/i', $stringLinkCss, $content, 1);
+				self::insertAfterOpeningHead($content, implode("\n", $arrayLinkCss));
 			}
 		}
 
@@ -97,6 +96,19 @@ class Main
 		return false;
 	}
 
+	/**
+	 * Вставляет HTML сразу после открывающего <head>, не затирая тег и атрибуты.
+	 */
+	private static function insertAfterOpeningHead(&$content, string $html): void
+	{
+		$content = preg_replace(
+			'/(<head\b[^>]*>)/i',
+			'$1' . "\n" . $html,
+			$content,
+			1
+		);
+	}
+
 	private static function getLinkForBlockingStyleSheets($content)
 	{
 		preg_match_all('/<link href="(.*)".*>/msU', $content, $matches);
@@ -114,7 +126,7 @@ class Main
 		}
 
 		if (!empty(self::$arrayEliminateStyleSheetsThatBlock)) {
-			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayEliminateStyleSheetsThatBlock, $content, 1);
+			self::insertAfterOpeningHead($content, self::$arrayEliminateStyleSheetsThatBlock);
 		}
 	}
 
@@ -135,7 +147,7 @@ class Main
 		}
 
 		if (!empty(self::$arrayEliminateScriptsThatBlock)) {
-			$content = preg_replace('/(<head.*?>)/i', "<head>\r\n" . self::$arrayEliminateScriptsThatBlock, $content, 1);
+			self::insertAfterOpeningHead($content, self::$arrayEliminateScriptsThatBlock);
 		}
 	}
 
