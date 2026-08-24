@@ -189,6 +189,8 @@ if ($request["Update"]) {
 		$arrayLinkJsScripts[$key]["STRING_PUBLIC_PART"] = $request["CONNECTED_JS_SCRIPT"][$key]["STRING_PUBLIC_PART"];
 	}
 	// === LinksJsScripts
+
+	Tools\GooglePageSpeed\Main::clearRulesCache();
 }
 
 

@@ -106,26 +106,18 @@ class ConnectedCssStyleTable extends Entity\DataManager
 	// 	return $result;
 	// }
 
-	// очистка тегированного кеша при добавлении
-	//public static function onAfterAdd(Entity\Event $event)
-	//{
-	//	RegionListTable::clearCache();
-	//}
-	//// очистка тегированного кеша при изменении
-	//public static function onAfterUpdate(Entity\Event $event)
-	//{
-	//	RegionListTable::clearCache();
-	//}
-	//// очистка тегированного кеша при удалении
-	//public static function onAfterDelete(Entity\Event $event)
-	//{
-	//	RegionListTable::clearCache();
-	//}
-	//// основной метод очистки кеша по тегу
-	//public static function clearCache()
-	//{
-	//	// служба пометки кеша тегами
-	//	$taggedCache = Application::getInstance()->getTaggedCache();
-	//	$taggedCache->clearByTag('popup');
-	//}
+	public static function onAfterAdd(Entity\Event $event)
+	{
+		Main::clearRulesCache();
+	}
+
+	public static function onAfterUpdate(Entity\Event $event)
+	{
+		Main::clearRulesCache();
+	}
+
+	public static function onAfterDelete(Entity\Event $event)
+	{
+		Main::clearRulesCache();
+	}
 }

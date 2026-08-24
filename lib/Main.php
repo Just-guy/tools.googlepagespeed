@@ -3,12 +3,15 @@
 namespace Tools\GooglePageSpeed;
 
 use COption;
+use \Bitrix\Main\Application;
 use \Bitrix\Main\Context;
 use Bitrix\Main\Page\Asset;
 
 class Main
 {
 	static $module_id = "tools.googlepagespeed";
+	private const CACHE_TTL = 3600;
+	private const CACHE_DIR = 'tools_googlepagespeed';
 
 	private const ALLOWED_OPTION_METHODS = [
 		'eliminateStyleSheetsThatBlockDisplay',
@@ -24,7 +27,7 @@ class Main
 
 		$templateArrayLinksCss = self::getLinksCssStyles(["ACTIVE" => "Y"]);
 		$templateArrayLinksJS = self::getLinksJsScripts(["ACTIVE" => "Y"]);
-		$arrayOptions = self::getOptions();
+		$arrayOptions = self::getOptions(["ACTIVE" => "Y"]);
 
 		if (!empty($templateArrayLinksCss)) {
 			foreach ($templateArrayLinksCss as $value) {
@@ -39,7 +42,6 @@ class Main
 		}
 
 		foreach ($arrayOptions as $valueOption) {
-			if ($valueOption['ACTIVE'] != 'Y') continue;
 			if ($valueOption["LIMITATION"] == 'for-gps-robot') {
 				if (!self::thisRobot()) continue;
 			}
@@ -212,61 +214,63 @@ class Main
 
 	public static function getLinksCssStyles($filter = [])
 	{
-		$resultArray = [];
-
-		// запрос к базе
-		$result = ConnectedCssStyleTable::getList(
-			[
-				'select' => ['*'],
-				'filter' => $filter
-			]
-		);
-		// преобразование запроса от базы
-		while ($row = $result->fetch()) {
-			$resultArray[] = $row;
-		}
-
-		// возвращаем ответ от баззы
-		return $resultArray;
+		$rows = self::getCachedTableRows('css_styles', ConnectedCssStyleTable::class);
+		return self::filterCachedRows($rows, $filter);
 	}
 
 	public static function getLinksJsScripts($filter = [])
 	{
-		$resultArray = [];
-
-		// запрос к базе
-		$result = ConnectedJsScriptTable::getList(
-			[
-				'select' => ['*'],
-				'filter' => $filter
-			]
-		);
-		// преобразование запроса от базы
-		while ($row = $result->fetch()) {
-			$resultArray[] = $row;
-		}
-
-		// возвращаем ответ от баззы
-		return $resultArray;
+		$rows = self::getCachedTableRows('js_scripts', ConnectedJsScriptTable::class);
+		return self::filterCachedRows($rows, $filter);
 	}
 
-	public static function getOptions()
+	public static function getOptions($filter = [])
 	{
-		$resultArray = [];
-		
-		// запрос к базе
-		$result = GPSOptionsTable::getList(
-			[
-				'select' => ['*'],
-			]
-		);
-		// преобразование запроса от базы
-		while ($row = $result->fetch()) {
-			$resultArray[] = $row;
+		$rows = self::getCachedTableRows('options', GPSOptionsTable::class);
+		return self::filterCachedRows($rows, $filter);
+	}
+
+	public static function clearRulesCache(): void
+	{
+		Application::getInstance()->getManagedCache()->cleanDir(self::CACHE_DIR);
+	}
+
+	/**
+	 * Одна выборка таблицы на TTL, дальше фильтр в PHP.
+	 * Админка и публичка делят один кеш.
+	 */
+	private static function getCachedTableRows(string $cacheId, string $tableClass): array
+	{
+		$cache = Application::getInstance()->getManagedCache();
+		if ($cache->read(self::CACHE_TTL, $cacheId, self::CACHE_DIR)) {
+			$rows = $cache->get($cacheId);
+			return is_array($rows) ? $rows : [];
 		}
 
-		// возвращаем ответ от баззы
-		return $resultArray;
+		$rows = [];
+		$result = $tableClass::getList(['select' => ['*']]);
+		while ($row = $result->fetch()) {
+			$rows[] = $row;
+		}
+
+		$cache->set($cacheId, $rows);
+		return $rows;
+	}
+
+	private static function filterCachedRows(array $rows, array $filter): array
+	{
+		if ($filter === []) {
+			return $rows;
+		}
+
+		return array_values(array_filter($rows, static function ($row) use ($filter) {
+			foreach ($filter as $field => $value) {
+				if (($row[$field] ?? null) !== $value) {
+					return false;
+				}
+			}
+			return true;
+		}));
 	}
 
 	public static function thisRobot()
