@@ -12,6 +12,12 @@ class Main
 	static $arrayEliminateStyleSheetsThatBlock = "";
 	static $arrayEliminateScriptsThatBlock = "";
 
+	private const ALLOWED_OPTION_METHODS = [
+		'eliminateStyleSheetsThatBlockDisplay',
+		'eliminateScriptsThatBlockDisplay',
+		'addLoadingLazyAttributeAllTagsImg',
+	];
+
 	public static function OnEndBufferContent(&$content)
 	{
 		if (self::shouldSkipBufferContent($content)) {
@@ -41,7 +47,13 @@ class Main
 			}
 
 			if ($valueOption['OPTION_TYPE'] == 'regular-expression') {
-				$regularExpressionArray = unserialize(htmlspecialcharsback($valueOption['OPTION_ACTION']));
+				$regularExpressionArray = unserialize(
+					htmlspecialcharsback($valueOption['OPTION_ACTION']),
+					['allowed_classes' => false]
+				);
+				if (!is_array($regularExpressionArray)) {
+					continue;
+				}
 
 				foreach ($regularExpressionArray as $regularExpression) {
 					if (preg_match('/' . $regularExpression . '/msU', $content)) {
@@ -51,7 +63,10 @@ class Main
 			}
 
 			if ($valueOption['OPTION_TYPE'] == 'function') {
-				$methodName  = htmlspecialcharsback($valueOption['OPTION_ACTION']);
+				$methodName = htmlspecialcharsback($valueOption['OPTION_ACTION']);
+				if (!in_array($methodName, self::ALLOWED_OPTION_METHODS, true)) {
+					continue;
+				}
 
 				self::$methodName($content);
 			}
