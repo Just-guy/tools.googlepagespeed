@@ -14,9 +14,10 @@ class Main
 
 	public static function OnEndBufferContent(&$content)
 	{
-		//$isAdmin = Context::getCurrent()->getRequest()->isAdminSection();
-		//if($isAdmin) continue;
-		
+		if (self::shouldSkipBufferContent($content)) {
+			return;
+		}
+
 		$templateArrayLinksCss = self::getLinksCssStyles(["ACTIVE" => "Y"]);
 		$templateArrayLinksJS = self::getLinksJsScripts(["ACTIVE" => "Y"]);
 		$arrayOptions = self::getOptions();
@@ -64,6 +65,36 @@ class Main
 				}
 			}
 		}
+	}
+
+	/**
+	 * Модуль правит только публичный HTML-документ.
+	 * Админка, AJAX, CLI и ответы без <head> (JSON, фрагменты) пропускаем.
+	 */
+	private static function shouldSkipBufferContent($content): bool
+	{
+		if (!is_string($content) || $content === '') {
+			return true;
+		}
+
+		if (PHP_SAPI === 'cli') {
+			return true;
+		}
+
+		$request = Context::getCurrent()->getRequest();
+		if ($request->isAdminSection() || $request->isAjaxRequest()) {
+			return true;
+		}
+
+		if (defined('PUBLIC_AJAX_MODE') && PUBLIC_AJAX_MODE) {
+			return true;
+		}
+
+		if (!preg_match('/<head\b/i', $content)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private static function getLinkForBlockingStyleSheets($content)
