@@ -60,9 +60,9 @@ $attributeLinkJsScripts = ['async', 'defer'];
 $randomId = '';
 $active = '';
 
-if ($request["Update"]) {
+if ($request["Update"] && check_bitrix_sessid()) {
 	// === GPS options
-	foreach ($request['OPTIONS'] as $keyOption => $valueOption) {
+	foreach (($request['OPTIONS'] ?? []) as $keyOption => $valueOption) {
 		if (empty($valueOption["ACTIVE"])) $valueOption["ACTIVE"] = "N";
 
 		if ($arrayOptions[$keyOption]["ACTIVE"] === $valueOption["ACTIVE"] && $arrayOptions[$keyOption]["LIMITATION"] === $valueOption["LIMITATION"]) continue;
@@ -112,7 +112,7 @@ if ($request["Update"]) {
 		$arrayLinkCssStyles[$key]["STRING_PUBLIC_PART"] = $request["STRING_PUBLIC_PART"][$key]["STRING_PUBLIC_PART"];
 	}
 
-	foreach ($request["STRING_PUBLIC_PART"] as $key => $value) {
+	foreach (($request["STRING_PUBLIC_PART"] ?? []) as $key => $value) {
 		if ($arrayLinkCssStyles[$key]) continue;
 
 		$active = 'N';
@@ -167,7 +167,7 @@ if ($request["Update"]) {
 		$arrayLinkJsScripts[$key]["STRING_PUBLIC_PART"] = $request["CONNECTED_JS_SCRIPT"][$key]["STRING_PUBLIC_PART"];
 	}
 
-	foreach ($request["CONNECTED_JS_SCRIPT"] as $key => $value) {
+	foreach (($request["CONNECTED_JS_SCRIPT"] ?? []) as $key => $value) {
 		if ($arrayLinkJsScripts[$key]) continue;
 
 		$active = 'N';
@@ -176,7 +176,6 @@ if ($request["Update"]) {
 		// Add
 		Tools\GooglePageSpeed\ConnectedJsScriptTable::add([
 			"ACTIVE" => $active,
-			"ROLE" => $request["CONNECTED_JS_SCRIPT"][$key]["ROLE"],
 			"ATTRIBUTE" => $request["CONNECTED_JS_SCRIPT"][$key]["ATTRIBUTE"],
 			"STRING_PUBLIC_PART" => $request["CONNECTED_JS_SCRIPT"][$key]["STRING_PUBLIC_PART"],
 			"STRING_REGULAR_EXPRESSION" => preg_quote($request["CONNECTED_JS_SCRIPT"][$key]["STRING_PUBLIC_PART"], '/')
@@ -184,7 +183,6 @@ if ($request["Update"]) {
 
 		$arrayLinkJsScripts[$key]["ID"] = $request["CONNECTED_JS_SCRIPT"][$key]["ID"];
 		$arrayLinkJsScripts[$key]["ACTIVE"] = $active;
-		$arrayLinkJsScripts[$key]["ROLE"] = $request["CONNECTED_JS_SCRIPT"][$key]["ROLE"];
 		$arrayLinkJsScripts[$key]["ATTRIBUTE"] = $request["CONNECTED_JS_SCRIPT"][$key]["ATTRIBUTE"];
 		$arrayLinkJsScripts[$key]["STRING_PUBLIC_PART"] = $request["CONNECTED_JS_SCRIPT"][$key]["STRING_PUBLIC_PART"];
 	}
@@ -386,8 +384,6 @@ elseif ($DB->GetErrorMessage() != "")
 		</td>
 	</tr>
 
-	<? $tabControl->BeginNextTab(); ?>
-
 	<? $tabControl->Buttons(); ?>
 	<input class="adm-btn-save" type="submit" name="Update" value="Применить" />
 	<input type="hidden" name="lang" value="<?= LANG ?>">
@@ -478,7 +474,7 @@ elseif ($DB->GetErrorMessage() != "")
 						<td class="tools-gps-filed__value">
 							<select  name="CONNECTED_JS_SCRIPT[` + keyNextElement + `][ATTRIBUTE]">`;
 
-				roleLinkCssStyles.forEach((valueAttribute, keyAttribute, array) => {
+				attributeLinkJsScripts.forEach((valueAttribute) => {
 					templateField += `<option value="${valueAttribute}">${valueAttribute}</option>`
 				});
 
