@@ -1,4 +1,4 @@
-<?
+<?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_admin_before.php';
 // пространство имен для подключений ланговых файлов
 use Bitrix\Main\Localization\Loc;
@@ -204,16 +204,16 @@ if ($message)
 elseif ($DB->GetErrorMessage() != "")
 	CAdminMessage::ShowMessage($DB->GetErrorMessage()); ?>
 
-<form method="POST" action="<?= $APPLICATION->GetCurPage() ?>?mid=<? echo ($module_id); ?>&lang=<?= (LANG); ?>" ENCTYPE="multipart/form-data" name="post_form">
+<form method="POST" action="<?= $APPLICATION->GetCurPage() ?>?mid=<?php echo ($module_id); ?>&lang=<?= (LANG); ?>" ENCTYPE="multipart/form-data" name="post_form">
 	<?= bitrix_sessid_post() ?>
-	<? $tabControl->Begin(); ?>
+	<?php $tabControl->Begin(); ?>
 
-	<? $tabControl->BeginNextTab(); ?>
-	<? $randomId = random_int(1, 999); ?>
-	<? foreach ($arrayOptions as $keyOption => $valueOption) { ?>
+	<?php $tabControl->BeginNextTab(); ?>
+	<?php $randomId = random_int(1, 999); ?>
+	<?php foreach ($arrayOptions as $keyOption => $valueOption) { ?>
 		<tr class="tools-gps-filed">
 			<td class="tools-gps-filed__active">
-				<input type="checkbox" name="OPTIONS[<?= $keyOption ?>][ACTIVE]" value="Y" size="60" <? if (!empty($valueOption['ACTIVE']) && $valueOption['ACTIVE'] == 'Y') echo 'checked' ?>>
+				<input type="checkbox" name="OPTIONS[<?= $keyOption ?>][ACTIVE]" value="Y" size="60" <?php if (!empty($valueOption['ACTIVE']) && $valueOption['ACTIVE'] == 'Y') echo 'checked' ?>>
 				<input type="hidden" name="OPTIONS[<?= $keyOption ?>][CODE_OPTION]" value="GOOGLE_PS_OPTION" size="60">
 			</td>
 			<td class="tools-gps-filed__name">
@@ -221,17 +221,17 @@ elseif ($DB->GetErrorMessage() != "")
 			</td>
 			<td class="tools-gps-filed__value">
 				<select name="OPTIONS[<?= $keyOption ?>][LIMITATION]">
-					<? foreach ($limitation as $keyLimitation => $valueLimitation) { ?>
-						<option value="<?= $keyLimitation ?>" <? if ($valueOption["LIMITATION"] == $keyLimitation) echo 'selected' ?>><?= $valueLimitation ?></option>
-					<? } ?>
+					<?php foreach ($limitation as $keyLimitation => $valueLimitation) { ?>
+						<option value="<?= $keyLimitation ?>" <?php if ($valueOption["LIMITATION"] == $keyLimitation) echo 'selected' ?>><?= $valueLimitation ?></option>
+					<?php } ?>
 				</select>
 			</td>
 		</tr>
-	<? } ?>
+	<?php } ?>
 
-	<? $tabControl->BeginNextTab(); ?>
+	<?php $tabControl->BeginNextTab(); ?>
 
-	<? if (empty($arrayLinkCssStyles)) :
+	<?php if (empty($arrayLinkCssStyles)) :
 		$randomId = random_int(1, 999); ?>
 		<tr class="tools-gps-filed" data-container="link-css" data-id="1" data-key="0">
 			<td class="tools-gps-filed__number">1.</td>
@@ -253,9 +253,9 @@ elseif ($DB->GetErrorMessage() != "")
 			</td>
 			<td class="tools-gps-filed__value">
 				<select name="STRING_PUBLIC_PART[0][ROLE]">
-					<? foreach ($roleLinkCssStyles as $keyRole => $valueRole) { ?>
+					<?php foreach ($roleLinkCssStyles as $keyRole => $valueRole) { ?>
 						<option value="<?= $valueRole ?>"><?= $valueRole ?></option>
-					<? } ?>
+					<?php } ?>
 				</select>
 			</td>
 			<td class="tools-gps-filed__text">
@@ -263,19 +263,19 @@ elseif ($DB->GetErrorMessage() != "")
 			</td>
 			<td class="tools-gps-filed__value">
 				<select name="STRING_PUBLIC_PART[0][TYPE]">
-					<? foreach ($typeLinkCssStyles as $keyType => $valueType) { ?>
+					<?php foreach ($typeLinkCssStyles as $keyType => $valueType) { ?>
 						<option value="<?= $valueType ?>"><?= $valueType ?></option>
-					<? } ?>
+					<?php } ?>
 				</select>
 			</td>
 		</tr>
-	<? else : ?>
-		<? foreach ($arrayLinkCssStyles as $keyLinkCss => $valueLinkCss) {
+	<?php else : ?>
+		<?php foreach ($arrayLinkCssStyles as $keyLinkCss => $valueLinkCss) {
 			$randomId = random_int(1, 999); ?>
 			<tr class="tools-gps-filed" data-container="link-css" data-id="<?= $valueLinkCss['ID'] ?>" data-key="<?= $keyLinkCss ?>">
 				<td class="tools-gps-filed__number"><?= (int)$keyLinkCss + 1 ?>.</td>
 				<td class="tools-gps-filed__active">
-					<input type="checkbox" name="STRING_PUBLIC_PART[<?= $keyLinkCss ?>][ACTIVE]" value="Y" size="60" id="designed_checkbox_<?= $randomId ?>" class="adm-designed-checkbox" <? if (!empty($valueLinkCss['ACTIVE']) && $valueLinkCss['ACTIVE'] == 'Y') echo 'checked' ?>>
+					<input type="checkbox" name="STRING_PUBLIC_PART[<?= $keyLinkCss ?>][ACTIVE]" value="Y" size="60" id="designed_checkbox_<?= $randomId ?>" class="adm-designed-checkbox" <?php if (!empty($valueLinkCss['ACTIVE']) && $valueLinkCss['ACTIVE'] == 'Y') echo 'checked' ?>>
 					<label class="adm-designed-checkbox-label" for="designed_checkbox_<?= $randomId ?>" title=""></label>
 				</td>
 				<td class="tools-gps-filed__value">
@@ -292,9 +292,9 @@ elseif ($DB->GetErrorMessage() != "")
 				</td>
 				<td class="tools-gps-filed__value">
 					<select name="STRING_PUBLIC_PART[<?= $keyLinkCss ?>][ROLE]">
-						<? foreach ($roleLinkCssStyles as $keyRole => $valueRole) { ?>
-							<option value="<?= $valueRole ?>" <? if ($valueLinkCss["ROLE"] == $valueRole) echo 'selected' ?>><?= $valueRole ?></option>
-						<? } ?>
+						<?php foreach ($roleLinkCssStyles as $keyRole => $valueRole) { ?>
+							<option value="<?= $valueRole ?>" <?php if ($valueLinkCss["ROLE"] == $valueRole) echo 'selected' ?>><?= $valueRole ?></option>
+						<?php } ?>
 					</select>
 				</td>
 				<td class="tools-gps-filed__text">
@@ -302,17 +302,17 @@ elseif ($DB->GetErrorMessage() != "")
 				</td>
 				<td class="tools-gps-filed__value">
 					<select name="STRING_PUBLIC_PART[<?= $keyLinkCss ?>][TYPE]">
-						<? foreach ($typeLinkCssStyles as $keyType => $valueType) { ?>
-							<option value="<?= $valueType ?>" <? if ($valueLinkCss["TYPE"] == $valueType) echo 'selected' ?>><?= $valueType ?></option>
-						<? } ?>
+						<?php foreach ($typeLinkCssStyles as $keyType => $valueType) { ?>
+							<option value="<?= $valueType ?>" <?php if ($valueLinkCss["TYPE"] == $valueType) echo 'selected' ?>><?= $valueType ?></option>
+						<?php } ?>
 					</select>
 				</td>
 				<td class="tools-gps-filed__delete">
 					<input type="button" class="tools-gps-filed__delete-field adm-btn-delete" value="x">
 				</td>
 			</tr>
-		<? } ?>
-	<? endif; ?>
+		<?php } ?>
+	<?php endif; ?>
 
 	<tr>
 		<td>
@@ -320,8 +320,8 @@ elseif ($DB->GetErrorMessage() != "")
 		</td>
 	</tr>
 
-	<? $tabControl->BeginNextTab(); ?>
-	<? if (empty($arrayLinkJsScripts)) :
+	<?php $tabControl->BeginNextTab(); ?>
+	<?php if (empty($arrayLinkJsScripts)) :
 		$randomId = random_int(1, 999); ?>
 		<tr class="tools-gps-filed" data-container="link-js" data-id="1" data-key="0">
 			<td class="tools-gps-filed__number">1.</td>
@@ -334,9 +334,9 @@ elseif ($DB->GetErrorMessage() != "")
 			</td>
 			<td class="tools-gps-filed__value">
 				<select name="CONNECTED_JS_SCRIPT[0][ATTRIBUTE]">
-					<? foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
+					<?php foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
 						<option value="<?= $valueAttribute ?>"><?= $valueAttribute ?></option>
-					<? } ?>
+					<?php } ?>
 				</select>
 			</td>
 			<td class="tools-gps-filed__text">
@@ -346,13 +346,13 @@ elseif ($DB->GetErrorMessage() != "")
 				<input type="text" name="CONNECTED_JS_SCRIPT[0][STRING_PUBLIC_PART]" value="" size="60">
 			</td>
 		</tr>
-	<? else : ?>
-		<? foreach ($arrayLinkJsScripts as $keyLinkJs => $valueLinkJs) {
+	<?php else : ?>
+		<?php foreach ($arrayLinkJsScripts as $keyLinkJs => $valueLinkJs) {
 			$randomId = random_int(1, 999); ?>
 			<tr class="tools-gps-filed" data-container="link-js" data-id="<?= $valueLinkJs['ID'] ?>" data-key="<?= $keyLinkJs ?>">
 				<td class="tools-gps-filed__number"><?= (int)$keyLinkJs + 1 ?>.</td>
 				<td class="tools-gps-filed__active">
-					<input type="checkbox" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ACTIVE]" value="Y" size="60" id="designed_checkbox_<?= $randomId ?>" class="adm-designed-checkbox" <? if (!empty($valueLinkJs['ACTIVE']) && $valueLinkJs['ACTIVE'] == 'Y') echo 'checked' ?>>
+					<input type="checkbox" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ACTIVE]" value="Y" size="60" id="designed_checkbox_<?= $randomId ?>" class="adm-designed-checkbox" <?php if (!empty($valueLinkJs['ACTIVE']) && $valueLinkJs['ACTIVE'] == 'Y') echo 'checked' ?>>
 					<label class="adm-designed-checkbox-label" for="designed_checkbox_<?= $randomId ?>" title=""></label>
 				</td>
 				<td class="tools-gps-filed__value">
@@ -360,9 +360,9 @@ elseif ($DB->GetErrorMessage() != "")
 				</td>
 				<td class="tools-gps-filed__value">
 					<select name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ATTRIBUTE]">
-						<? foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
-							<option value="<?= $valueAttribute ?>" <? if ($valueLinkJs["ATTRIBUTE"] == $valueAttribute) echo 'selected' ?>><?= $valueAttribute ?></option>
-						<? } ?>
+						<?php foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
+							<option value="<?= $valueAttribute ?>" <?php if ($valueLinkJs["ATTRIBUTE"] == $valueAttribute) echo 'selected' ?>><?= $valueAttribute ?></option>
+						<?php } ?>
 					</select>
 				</td>
 				<td class="tools-gps-filed__text">
@@ -375,8 +375,8 @@ elseif ($DB->GetErrorMessage() != "")
 					<input type="button" class="tools-gps-filed__delete-field adm-btn-delete" value="x">
 				</td>
 			</tr>
-		<? } ?>
-	<? endif; ?>
+		<?php } ?>
+	<?php endif; ?>
 
 	<tr>
 		<td>
@@ -384,13 +384,13 @@ elseif ($DB->GetErrorMessage() != "")
 		</td>
 	</tr>
 
-	<? $tabControl->Buttons(); ?>
+	<?php $tabControl->Buttons(); ?>
 	<input class="adm-btn-save" type="submit" name="Update" value="Применить" />
 	<input type="hidden" name="lang" value="<?= LANG ?>">
 </form>
 
-<? $tabControl->End(); ?>
-<? $tabControl->ShowWarnings("post_form", $message); ?>
+<?php $tabControl->End(); ?>
+<?php $tabControl->ShowWarnings("post_form", $message); ?>
 
 <!--  JS Scripts  -->
 <script>
@@ -526,4 +526,4 @@ elseif ($DB->GetErrorMessage() != "")
 		flex-basis: 325px;
 	}
 </style>
-<? require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/epilog_admin.php");
+<?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/epilog_admin.php");

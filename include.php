@@ -1,4 +1,4 @@
-<?
+<?php
 
 Bitrix\Main\Loader::registerAutoloadClasses(
 	'tools.googlepagespeed',

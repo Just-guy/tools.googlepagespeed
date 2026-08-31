@@ -1,4 +1,4 @@
-<? if (is_dir($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/tools.googlepagespeed/")) {
+<?php if (is_dir($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/tools.googlepagespeed/")) {
 	require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/tools.googlepagespeed/admin/tools.googlepagespeed_options.php");
 } else {
 	require_once($_SERVER["DOCUMENT_ROOT"] . "/local/modules/tools.googlepagespeed/admin/tools.googlepagespeed_options.php");
