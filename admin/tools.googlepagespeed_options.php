@@ -315,8 +315,167 @@ elseif ($DB->GetErrorMessage() != "")
 	<?php endif; ?>
 
 	<tr>
-		<td>
-			<input type="button" class="tools-gps-filed__add adm-btn-save" data-container-button="link-css" value="Добавить url">
+		<td colspan="10">
+			<input type="button" class="tools-gps-filed__add tools-gps-btn adm-btn-save" data-container-button="link-css" value="Добавить url">
+		</td>
+	</tr>
+
+	<tr class="tools-gps-ref-row">
+		<td colspan="10">
+			<div class="tools-gps-ref">
+				<div class="tools-gps-ref__header">
+					<span class="tools-gps-ref__header-icon" aria-hidden="true">
+						<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<circle cx="9" cy="9" r="9" fill="#3b82f6"/>
+							<path d="M9 5v5M9 12.5v.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+						</svg>
+					</span>
+					<div>
+						<div class="tools-gps-ref__title">Справочник: значения атрибута rel</div>
+						<div class="tools-gps-ref__subtitle">Выберите подходящее значение rel в зависимости от цели оптимизации загрузки ресурса.</div>
+					</div>
+				</div>
+
+				<table class="tools-gps-ref__table">
+					<thead>
+						<tr>
+							<th>Значение</th>
+							<th>Описание</th>
+							<th>Когда использовать</th>
+							<th>Подробнее</th>
+							<th>Пример</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>
+								<span class="tools-gps-ref__badge tools-gps-ref__badge--preload">preload</span>
+								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--preload" aria-hidden="true">
+									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.2 4.5 4.9.7-3.5 3.4.8 4.9L8 12.2 3.6 14.5l.8-4.9L1 6.2l4.9-.7L8 1z"/></svg>
+								</span>
+							</td>
+							<td>Задает приоритетную загрузку ресурса. Браузер загружает его как можно скорее и сохраняет в кеше для последующего использования.</td>
+							<td>Для критически важных ресурсов, необходимых для отображения контента: шрифты, CSS, hero-изображения, важные JS.</td>
+							<td>
+								<ul>
+									<li>Загружается прямо сейчас.</li>
+									<li>Не блокирует парсинг HTML.</li>
+									<li>Требует указания атрибута as.</li>
+									<li>Используйте только для действительно важных ресурсов.</li>
+								</ul>
+							</td>
+							<td>
+								<div class="tools-gps-ref__examples">
+									<code class="tools-gps-ref__code">&lt;link rel="preload" href="/local/templates/style.css" as="style"&gt;</code>
+									<code class="tools-gps-ref__code">&lt;link rel="preload" href="/local/templates/font.woff2" as="font" type="font/woff2" crossorigin&gt;</code>
+									<code class="tools-gps-ref__code">&lt;link rel="preload" href="/img/hero.jpg" as="image"&gt;</code>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<span class="tools-gps-ref__badge tools-gps-ref__badge--prefetch">prefetch</span>
+								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--prefetch" aria-hidden="true">
+									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3v4H9V5h2.6A5 5 0 103 8h1.5a3.5 3.5 0 116.9-2H13z"/></svg>
+								</span>
+							</td>
+							<td>Указывает браузеру загрузить ресурс в фоновом режиме для возможного будущего перехода.</td>
+							<td>Для ресурсов других страниц, на которые пользователь может перейти (например, следующая статья, страница категории и т.д.).</td>
+							<td>
+								<ul>
+									<li>Загружается с низким приоритетом.</li>
+									<li>Не используется в текущей навигации.</li>
+									<li>Подходит для ссылок, которые, вероятно, понадобятся позже.</li>
+								</ul>
+							</td>
+							<td>
+								<div class="tools-gps-ref__examples">
+									<code class="tools-gps-ref__code">&lt;link rel="prefetch" href="/js/next-page.js" as="script"&gt;</code>
+									<code class="tools-gps-ref__code">&lt;link rel="prefetch" href="/catalog/page-2/" as="document"&gt;</code>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<span class="tools-gps-ref__badge tools-gps-ref__badge--preconnect">preconnect</span>
+								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--preconnect" aria-hidden="true">
+									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 4.5a4 4 0 015.7 5.2l-1.1 1.1a2.5 2.5 0 00-3.5 3.5l-1.1 1.1A4 4 0 016.5 4.5zm3 7a4 4 0 01-5.7-5.2l1.1-1.1a2.5 2.5 0 003.5-3.5l1.1-1.1A4 4 0 019.5 11.5z"/></svg>
+								</span>
+							</td>
+							<td>Устанавливает раннее соединение с указанным доменом (DNS, TCP, TLS handshake).</td>
+							<td>Для внешних доменов (шрифты, API, CDN, аналитика), к которым подключение занимает время.</td>
+							<td>
+								<ul>
+									<li>Ускоряет установление соединения.</li>
+									<li>Полезен для сервисов, которые будут запрошены позже.</li>
+									<li>Рекомендуется для сторонних сервисов.</li>
+								</ul>
+							</td>
+							<td>
+								<div class="tools-gps-ref__examples">
+									<code class="tools-gps-ref__code">&lt;link rel="preconnect" href="https://fonts.googleapis.com"&gt;</code>
+									<code class="tools-gps-ref__code">&lt;link rel="preconnect" href="https://api.example.com" crossorigin&gt;</code>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<span class="tools-gps-ref__badge tools-gps-ref__badge--dns-prefetch">dns-prefetch</span>
+								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--dns-prefetch" aria-hidden="true">
+									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm-.2 2.1a5.8 5.8 0 014.1 9.8A5.8 5.8 0 017.8 3.1zM8 3.5V8l3.2 1.8"/></svg>
+								</span>
+							</td>
+							<td>Выполняет предварительный DNS-запрос к указанному домену.</td>
+							<td>Когда важно ускорить только DNS-разрешение, но соединение пока не требуется.</td>
+							<td>
+								<ul>
+									<li>Только DNS-запрос.</li>
+									<li>Не устанавливает соединение.</li>
+									<li>Легковесный способ ускорить обращение к домену.</li>
+								</ul>
+							</td>
+							<td>
+								<div class="tools-gps-ref__examples">
+									<code class="tools-gps-ref__code">&lt;link rel="dns-prefetch" href="//example.com"&gt;</code>
+									<code class="tools-gps-ref__code">&lt;link rel="dns-prefetch" href="//cdn.example.com"&gt;</code>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<span class="tools-gps-ref__badge tools-gps-ref__badge--prerender">prerender</span>
+								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--prerender" aria-hidden="true">
+									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v8H2V3zm1 1v6h10V4H3zm1 8h8v1H4v-1z"/></svg>
+								</span>
+							</td>
+							<td>Загружает и рендерит указанную страницу в фоновом режиме.</td>
+							<td>Для страниц, на которые пользователь, скорее всего, перейдет (например, следующая статья, переход по кнопке «Далее»).</td>
+							<td>
+								<ul>
+									<li>Полная загрузка и отрисовка страницы в фоне.</li>
+									<li>Может значительно ускорить навигацию.</li>
+									<li>Используйте с осторожностью — не для всех страниц.</li>
+								</ul>
+							</td>
+							<td><code class="tools-gps-ref__code">&lt;link rel="prerender" href="/next-page.html"&gt;</code></td>
+						</tr>
+					</tbody>
+				</table>
+
+				<div class="tools-gps-ref__note">
+					<div class="tools-gps-ref__note-title">
+						<span class="tools-gps-ref__note-icon" aria-hidden="true">
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#3b82f6"/><path d="M8 4.5v4.5M8 11v.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>
+						</span>
+						Примечание
+					</div>
+					<ul>
+						<li>Не все браузеры поддерживают все значения rel. Используйте их с умом и тестируйте влияние на производительность.</li>
+						<li>Избыточное использование preload может ухудшить производительность (загружает лишнее).</li>
+						<li>Для изображений обязательно указывайте as="image", для шрифтов — as="font" и type + crossorigin.</li>
+					</ul>
+				</div>
+			</div>
 		</td>
 	</tr>
 
@@ -379,13 +538,13 @@ elseif ($DB->GetErrorMessage() != "")
 	<?php endif; ?>
 
 	<tr>
-		<td>
-			<input type="button" class="tools-gps-filed__add adm-btn-save" data-container-button="link-js" value="Добавить url">
+		<td colspan="10">
+			<input type="button" class="tools-gps-filed__add tools-gps-btn adm-btn-save" data-container-button="link-js" value="Добавить url">
 		</td>
 	</tr>
 
 	<?php $tabControl->Buttons(); ?>
-	<input class="adm-btn-save" type="submit" name="Update" value="Применить" />
+	<input class="tools-gps-btn adm-btn-save" type="submit" name="Update" value="Применить" />
 	<input type="hidden" name="lang" value="<?= LANG ?>">
 </form>
 
@@ -524,6 +683,236 @@ elseif ($DB->GetErrorMessage() != "")
 
 	.tools-gps-filed__name {
 		flex-basis: 325px;
+	}
+
+	.tools-gps-btn.adm-btn-save {
+		border: 1px solid #6d8f00 !important;
+		border-radius: 4px !important;
+		color: #fff !important;
+		text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+		background-color: #86a820 !important;
+		background-image:
+			repeating-linear-gradient(
+				-45deg,
+				transparent,
+				transparent 2px,
+				rgba(255, 255, 255, 0.04) 2px,
+				rgba(255, 255, 255, 0.04) 4px
+			),
+			linear-gradient(to bottom, #acce11 0%, #8abb0d 45%, #729e00 100%) !important;
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 1px 2px rgba(0, 0, 0, 0.12) !important;
+	}
+
+	.tools-gps-btn.adm-btn-save:hover {
+		background-image:
+			repeating-linear-gradient(
+				-45deg,
+				transparent,
+				transparent 2px,
+				rgba(255, 255, 255, 0.05) 2px,
+				rgba(255, 255, 255, 0.05) 4px
+			),
+			linear-gradient(to bottom, #b8d916 0%, #97ba00 100%) !important;
+	}
+
+	.tools-gps-btn.adm-btn-save:active {
+		background-color: #698f00 !important;
+		background-image: linear-gradient(to bottom, #729e00 0%, #5f8500 100%) !important;
+		box-shadow: inset 0 2px 1px rgba(66, 84, 17, 0.55) !important;
+	}
+
+	.tools-gps-ref-row > td {
+		padding: 0 !important;
+		border: none !important;
+	}
+
+	.tools-gps-ref {
+		margin: 24px 0 8px;
+		padding: 20px 24px 22px;
+		background: #fff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		font-size: 13px;
+		line-height: 1.5;
+		color: #334155;
+	}
+
+	.tools-gps-ref__header {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		margin-bottom: 18px;
+	}
+
+	.tools-gps-ref__header-icon {
+		flex-shrink: 0;
+		margin-top: 2px;
+	}
+
+	.tools-gps-ref__title {
+		font-size: 16px;
+		font-weight: 600;
+		color: #1e293b;
+		margin-bottom: 4px;
+	}
+
+	.tools-gps-ref__subtitle {
+		font-size: 13px;
+		color: #64748b;
+	}
+
+	.tools-gps-ref__table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+
+	.tools-gps-ref__table th {
+		text-align: left;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: #64748b;
+		padding: 10px 12px;
+		border-bottom: 1px solid #e2e8f0;
+		vertical-align: bottom;
+	}
+
+	.tools-gps-ref__th-icon {
+		display: inline-block;
+		margin-right: 4px;
+		color: #94a3b8;
+		font-size: 10px;
+	}
+
+	.tools-gps-ref__table td {
+		padding: 16px 12px;
+		border-bottom: 1px solid #f1f5f9;
+		vertical-align: top;
+	}
+
+	.tools-gps-ref__table tbody tr:last-child td {
+		border-bottom: none;
+	}
+
+	.tools-gps-ref__table td:first-child {
+		width: 11%;
+		white-space: nowrap;
+	}
+
+	.tools-gps-ref__table td:nth-child(2) {
+		width: 18%;
+	}
+
+	.tools-gps-ref__table td:nth-child(3) {
+		width: 18%;
+	}
+
+	.tools-gps-ref__table td:nth-child(4) {
+		width: 24%;
+	}
+
+	.tools-gps-ref__table td:last-child {
+		width: 29%;
+	}
+
+	.tools-gps-ref__badge {
+		display: inline-block;
+		padding: 3px 10px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 600;
+		color: #fff;
+		vertical-align: middle;
+	}
+
+	.tools-gps-ref__badge-icon {
+		display: inline-flex;
+		vertical-align: middle;
+		margin-left: 6px;
+	}
+
+	.tools-gps-ref__badge--preload { background: #7c3aed; }
+	.tools-gps-ref__badge-icon--preload { color: #7c3aed; }
+
+	.tools-gps-ref__badge--prefetch { background: #16a34a; }
+	.tools-gps-ref__badge-icon--prefetch { color: #16a34a; }
+
+	.tools-gps-ref__badge--preconnect { background: #ea580c; }
+	.tools-gps-ref__badge-icon--preconnect { color: #ea580c; }
+
+	.tools-gps-ref__badge--dns-prefetch { background: #4f46e5; }
+	.tools-gps-ref__badge-icon--dns-prefetch { color: #4f46e5; }
+
+	.tools-gps-ref__badge--prerender { background: #0891b2; }
+	.tools-gps-ref__badge-icon--prerender { color: #0891b2; }
+
+	.tools-gps-ref__table ul {
+		margin: 0;
+		padding-left: 16px;
+	}
+
+	.tools-gps-ref__table li {
+		margin-bottom: 4px;
+	}
+
+	.tools-gps-ref__table li:last-child {
+		margin-bottom: 0;
+	}
+
+	.tools-gps-ref__examples {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.tools-gps-ref__code {
+		display: inline-block;
+		font-family: Consolas, Monaco, "Courier New", monospace;
+		font-size: 11px;
+		line-height: 1.4;
+		color: #be185d;
+		background: #fdf2f8;
+		padding: 6px 10px;
+		border-radius: 4px;
+		word-break: break-all;
+	}
+
+	.tools-gps-ref__note {
+		margin-top: 20px;
+		padding: 14px 16px;
+		background: #f0f9ff;
+		border-radius: 6px;
+		border-left: 3px solid #3b82f6;
+	}
+
+	.tools-gps-ref__note-title {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-weight: 600;
+		color: #1e293b;
+		margin-bottom: 8px;
+	}
+
+	.tools-gps-ref__note ul {
+		margin: 0;
+		padding-left: 18px;
+		color: #475569;
+	}
+
+	.tools-gps-ref__note li {
+		margin-bottom: 4px;
+	}
+
+	.tools-gps-ref__note code {
+		font-family: Consolas, Monaco, "Courier New", monospace;
+		font-size: 12px;
+		color: #be185d;
+		background: rgba(255, 255, 255, 0.7);
+		padding: 1px 4px;
+		border-radius: 3px;
 	}
 </style>
 <?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/epilog_admin.php");
