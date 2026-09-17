@@ -543,6 +543,81 @@ elseif ($DB->GetErrorMessage() != "")
 		</td>
 	</tr>
 
+	<tr class="tools-gps-ref-row">
+		<td colspan="10">
+			<div class="tools-gps-ref tools-gps-script-ref">
+				<div class="tools-gps-ref__header">
+					<span class="tools-gps-ref__header-icon" aria-hidden="true">
+						<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<circle cx="9" cy="9" r="9" fill="#94a3b8"/>
+							<path d="M9 5.5a1.2 1.2 0 100 2.4A1.2 1.2 0 009 5.5z" fill="#fff"/>
+							<path d="M9 9.5v3.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+						</svg>
+					</span>
+					<div>
+						<div class="tools-gps-ref__title">Описание атрибутов defer и async</div>
+						<div class="tools-gps-ref__subtitle">Эти атрибуты определяют, как и когда браузер загружает и выполняет внешний JavaScript.</div>
+					</div>
+				</div>
+
+				<div class="tools-gps-script-ref__grid">
+					<div class="tools-gps-script-ref__card tools-gps-script-ref__card--defer">
+						<div class="tools-gps-script-ref__card-head">
+							<span class="tools-gps-script-ref__attr tools-gps-script-ref__attr--defer">defer</span>
+							<span class="tools-gps-script-ref__card-icon tools-gps-script-ref__card-icon--defer" aria-hidden="true">
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm-.5 3v4.5l3.5 2-.8 1.2L6 9.2V4h1.5z"/></svg>
+							</span>
+							<span class="tools-gps-script-ref__card-label">Отложенное выполнение</span>
+						</div>
+						<p class="tools-gps-script-ref__text">Скрипт загружается параллельно с HTML, но выполняется только после <strong>полного разбора документа</strong>, перед событием DOMContentLoaded.</p>
+						<div class="tools-gps-script-ref__section-title">Когда использовать</div>
+						<ul class="tools-gps-script-ref__list">
+							<li>Когда порядок выполнения скриптов важен.</li>
+							<li>Когда скрипт зависит от DOM-элементов на странице.</li>
+							<li>Для большинства скриптов на странице.</li>
+						</ul>
+						<div class="tools-gps-script-ref__hint tools-gps-script-ref__hint--defer">
+							<span class="tools-gps-script-ref__hint-icon" aria-hidden="true">
+								<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="7" fill="#3b82f6"/><path d="M7 4v3.5M7 9v.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>
+							</span>
+							Скрипты с defer сохраняют порядок выполнения.
+						</div>
+					</div>
+
+					<div class="tools-gps-script-ref__card tools-gps-script-ref__card--async">
+						<div class="tools-gps-script-ref__card-head">
+							<span class="tools-gps-script-ref__attr tools-gps-script-ref__attr--async">async</span>
+							<span class="tools-gps-script-ref__card-icon tools-gps-script-ref__card-icon--async" aria-hidden="true">
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M9.5 1.5L4 9h3.5L6.5 14.5 12 7H8.5L9.5 1.5z"/></svg>
+							</span>
+							<span class="tools-gps-script-ref__card-label">Немедленное выполнение</span>
+						</div>
+						<p class="tools-gps-script-ref__text">Скрипт загружается параллельно с HTML и выполняется сразу после загрузки, не дожидаясь разбора документа.</p>
+						<div class="tools-gps-script-ref__section-title">Когда использовать</div>
+						<ul class="tools-gps-script-ref__list">
+							<li>Для независимых скриптов (например, счётчики, виджеты).</li>
+							<li>Когда порядок выполнения не важен.</li>
+							<li>Когда скрипт не зависит от DOM-элементов.</li>
+						</ul>
+						<div class="tools-gps-script-ref__hint tools-gps-script-ref__hint--async">
+							<span class="tools-gps-script-ref__hint-icon" aria-hidden="true">
+								<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="7" fill="#7c3aed"/><path d="M7 4v3.5M7 9v.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>
+							</span>
+							Порядок выполнения скриптов с async не гарантируется.
+						</div>
+					</div>
+				</div>
+
+				<div class="tools-gps-script-ref__warning">
+					<span class="tools-gps-script-ref__warning-icon" aria-hidden="true">
+						<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1.5a5.5 5.5 0 00-2.2 10.6V14h4.4v-1.9A5.5 5.5 0 009 1.5z" fill="#f59e0b"/><path d="M7 15.5h4M8 17h2" stroke="#d97706" stroke-width="1.2" stroke-linecap="round"/></svg>
+					</span>
+					<strong>Важно:</strong> Не используйте async и defer вместе — выберите только один вариант для каждого скрипта.
+				</div>
+			</div>
+		</td>
+	</tr>
+
 	<?php $tabControl->Buttons(); ?>
 	<input class="tools-gps-btn adm-btn-save" type="submit" name="Update" value="Применить" />
 	<input type="hidden" name="lang" value="<?= LANG ?>">
@@ -913,6 +988,133 @@ elseif ($DB->GetErrorMessage() != "")
 		background: rgba(255, 255, 255, 0.7);
 		padding: 1px 4px;
 		border-radius: 3px;
+	}
+
+	.tools-gps-script-ref__grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+		margin-bottom: 16px;
+	}
+
+	.tools-gps-script-ref__card {
+		padding: 16px 18px;
+		background: #fff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+	}
+
+	.tools-gps-script-ref__card-head {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 12px;
+		flex-wrap: wrap;
+	}
+
+	.tools-gps-script-ref__attr {
+		font-size: 14px;
+		font-weight: 700;
+	}
+
+	.tools-gps-script-ref__attr--defer { color: #2563eb; }
+	.tools-gps-script-ref__attr--async { color: #7c3aed; }
+
+	.tools-gps-script-ref__card-icon {
+		display: inline-flex;
+	}
+
+	.tools-gps-script-ref__card-icon--defer { color: #2563eb; }
+	.tools-gps-script-ref__card-icon--async { color: #7c3aed; }
+
+	.tools-gps-script-ref__card-label {
+		font-size: 13px;
+		font-weight: 600;
+		color: #334155;
+	}
+
+	.tools-gps-script-ref__text {
+		margin: 0 0 14px;
+		font-size: 13px;
+		line-height: 1.5;
+		color: #475569;
+	}
+
+	.tools-gps-script-ref__section-title {
+		font-size: 12px;
+		font-weight: 600;
+		color: #64748b;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		margin-bottom: 8px;
+	}
+
+	.tools-gps-script-ref__list {
+		margin: 0 0 14px;
+		padding: 0;
+		list-style: none;
+	}
+
+	.tools-gps-script-ref__list li {
+		position: relative;
+		padding-left: 22px;
+		margin-bottom: 6px;
+		font-size: 13px;
+		color: #475569;
+		line-height: 1.45;
+	}
+
+	.tools-gps-script-ref__list li::before {
+		content: "✓";
+		position: absolute;
+		left: 0;
+		top: 0;
+		color: #16a34a;
+		font-weight: 700;
+		font-size: 13px;
+	}
+
+	.tools-gps-script-ref__hint {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		padding: 10px 12px;
+		border-radius: 6px;
+		font-size: 12px;
+		line-height: 1.45;
+	}
+
+	.tools-gps-script-ref__hint--defer {
+		background: #eff6ff;
+		color: #1e40af;
+	}
+
+	.tools-gps-script-ref__hint--async {
+		background: #f5f3ff;
+		color: #5b21b6;
+	}
+
+	.tools-gps-script-ref__hint-icon {
+		flex-shrink: 0;
+		margin-top: 1px;
+	}
+
+	.tools-gps-script-ref__warning {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		padding: 12px 14px;
+		background: #fffbeb;
+		border: 1px solid #fde68a;
+		border-radius: 6px;
+		font-size: 13px;
+		line-height: 1.5;
+		color: #92400e;
+	}
+
+	.tools-gps-script-ref__warning-icon {
+		flex-shrink: 0;
+		margin-top: 1px;
 	}
 </style>
 <?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/epilog_admin.php");
