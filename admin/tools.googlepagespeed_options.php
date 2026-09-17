@@ -351,7 +351,7 @@ elseif ($DB->GetErrorMessage() != "")
 							<td>
 								<span class="tools-gps-ref__badge tools-gps-ref__badge--preload">preload</span>
 								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--preload" aria-hidden="true">
-									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.2 4.5 4.9.7-3.5 3.4.8 4.9L8 12.2 3.6 14.5l.8-4.9L1 6.2l4.9-.7L8 1z"/></svg>
+					
 								</span>
 							</td>
 							<td>Задает приоритетную загрузку ресурса. Браузер загружает его как можно скорее и сохраняет в кеше для последующего использования.</td>
@@ -376,7 +376,6 @@ elseif ($DB->GetErrorMessage() != "")
 							<td>
 								<span class="tools-gps-ref__badge tools-gps-ref__badge--prefetch">prefetch</span>
 								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--prefetch" aria-hidden="true">
-									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3v4H9V5h2.6A5 5 0 103 8h1.5a3.5 3.5 0 116.9-2H13z"/></svg>
 								</span>
 							</td>
 							<td>Указывает браузеру загрузить ресурс в фоновом режиме для возможного будущего перехода.</td>
@@ -399,7 +398,6 @@ elseif ($DB->GetErrorMessage() != "")
 							<td>
 								<span class="tools-gps-ref__badge tools-gps-ref__badge--preconnect">preconnect</span>
 								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--preconnect" aria-hidden="true">
-									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 4.5a4 4 0 015.7 5.2l-1.1 1.1a2.5 2.5 0 00-3.5 3.5l-1.1 1.1A4 4 0 016.5 4.5zm3 7a4 4 0 01-5.7-5.2l1.1-1.1a2.5 2.5 0 003.5-3.5l1.1-1.1A4 4 0 019.5 11.5z"/></svg>
 								</span>
 							</td>
 							<td>Устанавливает раннее соединение с указанным доменом (DNS, TCP, TLS handshake).</td>
@@ -422,7 +420,6 @@ elseif ($DB->GetErrorMessage() != "")
 							<td>
 								<span class="tools-gps-ref__badge tools-gps-ref__badge--dns-prefetch">dns-prefetch</span>
 								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--dns-prefetch" aria-hidden="true">
-									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm-.2 2.1a5.8 5.8 0 014.1 9.8A5.8 5.8 0 017.8 3.1zM8 3.5V8l3.2 1.8"/></svg>
 								</span>
 							</td>
 							<td>Выполняет предварительный DNS-запрос к указанному домену.</td>
@@ -445,7 +442,6 @@ elseif ($DB->GetErrorMessage() != "")
 							<td>
 								<span class="tools-gps-ref__badge tools-gps-ref__badge--prerender">prerender</span>
 								<span class="tools-gps-ref__badge-icon tools-gps-ref__badge-icon--prerender" aria-hidden="true">
-									<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v8H2V3zm1 1v6h10V4H3zm1 8h8v1H4v-1z"/></svg>
 								</span>
 							</td>
 							<td>Загружает и рендерит указанную страницу в фоновом режиме.</td>
