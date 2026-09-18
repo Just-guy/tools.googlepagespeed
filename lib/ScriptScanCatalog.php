@@ -5,29 +5,32 @@ namespace Tools\GooglePageSpeed;
 /**
  * Реестр для сканера скриптов: что скрывать и какие «знакомые» пресеты предлагать.
  *
- * hide — не показывать в результатах (ядро Bitrix, Метрика/GA — ими занимаются опции).
- * presets — узнаваемые сторонние скрипты: цвет, атрибут, автодобавление в правила.
+ * hide — системные path Bitrix / аналитика (якорь на начало path после хоста;
+ * не трогает /local/.../bitrix/... и не скрывает /bitrix/templates/).
+ * presets — сторонние скрипты: цвет, атрибут, автодобавление в правила.
  */
 class ScriptScanCatalog
 {
 	/**
-	 * Паттерны URL, которые полностью исключаются из выдачи сканера.
-	 * Ключ — причина для счётчика: core | analytics.
+	 * Правила исключения из выдачи сканера.
+	 * Для path Bitrix: якорь `^(?:https?://[^/]+)?/bitrix/...` — только корень сайта.
+	 * /bitrix/templates/ намеренно нет.
 	 *
 	 * @return array<int, array{reason: string, pattern: string}>
 	 */
 	public static function getHideRules(): array
 	{
 		return [
-			['reason' => 'core', 'pattern' => '/\/bitrix\/js\//i'],
-			['reason' => 'core', 'pattern' => '/\/bitrix\/cache\//i'],
-			['reason' => 'core', 'pattern' => '/\/bitrix\/components\//i'],
-			['reason' => 'core', 'pattern' => '/\/bitrix\/templates\//i'],
-			['reason' => 'core', 'pattern' => '/\/bitrix\/panel\//i'],
-			['reason' => 'core', 'pattern' => '/\/bitrix\/themes\//i'],
-			['reason' => 'core', 'pattern' => '/\/bitrix\/tools\//i'],
+			['reason' => 'core', 'pattern' => '#^(?:https?://[^/]+)?/bitrix/js/#i'],
+			['reason' => 'core', 'pattern' => '#^(?:https?://[^/]+)?/bitrix/cache/#i'],
+			['reason' => 'core', 'pattern' => '#^(?:https?://[^/]+)?/bitrix/components/#i'],
+			['reason' => 'core', 'pattern' => '#^(?:https?://[^/]+)?/bitrix/panel/#i'],
+			['reason' => 'core', 'pattern' => '#^(?:https?://[^/]+)?/bitrix/themes/#i'],
+			['reason' => 'core', 'pattern' => '#^(?:https?://[^/]+)?/bitrix/tools/#i'],
+			['reason' => 'core', 'pattern' => '#^(?:https?://[^/]+)?/bitrix/resources/#i'],
+			['reason' => 'core', 'pattern' => '#^(?:https?://[^/]+)?/bitrix/admin/#i'],
+			['reason' => 'core', 'pattern' => '#^(?:https?://[^/]+)?/bitrix/modules/#i'],
 			['reason' => 'core', 'pattern' => '/kernel_main|kernel_main_v1/i'],
-			['reason' => 'core', 'pattern' => '/\/bitrix\/js\/main\//i'],
 
 			['reason' => 'analytics', 'pattern' => '/mc\.yandex\.(?:ru|com)/i'],
 			['reason' => 'analytics', 'pattern' => '/yandex\.ru\/metrika|yandex\.com\/metrika/i'],
