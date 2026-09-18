@@ -58,7 +58,11 @@
 - Робот PageSpeed: UA содержит `"Lighthouse"` (`RobotDetector::isPageSpeedRobot`). Область «только для робота» — осознанный компромисс, не включать «на всякий случай».
 - Открывающие теги PHP — только `<?php` (короткие `<?` убраны).
 - **Пресеты отложенной загрузки (вариант E, v1.1.0):** `ScriptDeferral` + опции `deferYandexMetrika` / `deferGoogleAnalytics` (`deferJivoChat` — закомментирован). Stub (ym/gtag) + runtime перед `</body>`: idle или первое взаимодействие. Строки в БД: `DeferredPresets::ensureOptions()` при открытии админки. Не путать с опциями «Вырезать…». Подробная карта вариантов A–F — раздел ниже «Отложенная загрузка (варианты)».
-- **Скан скриптов страницы (v1.2.0):** вкладка «Тэг script» — HTTP GET публичного URL → список `<script src>`. Реестр в `ScriptScanCatalog`: **hide** (ядро `/bitrix/…`, Метрика/GA/GTM — не показывать; ими занимаются опции «Отложить») и **presets** (Jivo, Calltouch, VK, Facebook, TikTok, Roistat — цвет + `async`/`defer` + автодобавление в форму). Не-пресеты — только ручная кнопка «Добавить». Уже с `async`/`defer` скрываются. Счётчик: найдено / скрыто ядро / аналитика / non-blocking / пресеты / уже в правилах. Постоянное «облако проекта» не делаем. **Несколько URL:** через запятую / `;` / перевод строки (макс. 5); пресеты путей «Главная / Каталог / Контакты» кликом дописывают `origin+path` в textarea.
+- **Скан скриптов страницы (v1.2.0):** вкладка «Тэг script» — HTTP GET публичного URL → список `<script src>`. Реестр в `ScriptScanCatalog`: **hide** только в `getHideRules()` (якоря на `/bitrix/js|cache|components|panel|themes|tools|resources|admin|modules/`, без `/bitrix/templates/`; вложенные `/local/.../bitrix/...` не матчятся). Метрика/GA/GTM — analytics. **presets** / **getScanUrlPresets**. Уже с `async`/`defer` скрываются. **Несколько URL:** запятая / `;` / перевод строки (макс. 5). **Loopback:** `localhost`/`127.0.0.1` для HTTP-запроса заменяются на `SERVER_NAME` сайта Bitrix (если он не loopback) — без привязки к Docker; пресеты URL берут `PageScriptScanner::getPublicOrigin()`. **publicPart:** свои пути — полный path без домена; внешние — `host+path`.
+
+## Код (стиль)
+
+- **Методы классов — рационально:** не плодить `getX` / `extractY` / deprecated-обёртки ради одной развилки. Один реестр + один matcher, если данных хватает (пример: hide только через `getHideRules` + `matchHide`). Новый метод — только при повторе, реальной ветке логики или требовании API; не «на будущее» и не дробить один список на три метода.
 
 ## Отложенная загрузка (варианты)
 
