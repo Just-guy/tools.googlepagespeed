@@ -713,18 +713,18 @@ elseif ($DB->GetErrorMessage() != "")
 		roleLinkCssStyles = <?= \Bitrix\Main\Web\Json::encode($roleLinkCssStyles); ?>,
 		typeLinkCssStyles = <?= \Bitrix\Main\Web\Json::encode($typeLinkCssStyles); ?>,
 		attributeLinkJsScripts = <?= \Bitrix\Main\Web\Json::encode($attributeLinkJsScripts); ?>,
-		gpsScanSessid = <?= \Bitrix\Main\Web\Json::encode(bitrix_sessid()); ?>;
+		gpsScanSessid = <?= \Bitrix\Main\Web\Json::encode(bitrix_sessid()); ?>,
+		gpsScanPublicOrigin = <?= \Bitrix\Main\Web\Json::encode(Tools\GooglePageSpeed\PageScriptScanner::getPublicOrigin()); ?>;
 
 	(function initScanUrlDefault() {
 		let input = document.getElementById('tools-gps-scan-url');
 		if (input && !(input.value || '').trim()) {
-			input.value = window.location.origin + '/';
+			input.value = (gpsScanPublicOrigin || window.location.origin) + '/';
 		}
 	})();
 
 	function gpsSiteOrigin() {
-		// Админка часто на том же хосте, что и сайт; origin подходит для пресетов путей.
-		return window.location.origin;
+		return gpsScanPublicOrigin || window.location.origin;
 	}
 
 	function gpsResolveScanPath(path) {

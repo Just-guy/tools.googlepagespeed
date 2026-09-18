@@ -77,6 +77,10 @@ class PageScriptScanner
 			if (count($failedUrls) > 1) {
 				$firstError .= ' (ошибок: ' . count($failedUrls) . ')';
 			}
+			if (self::listHasLoopbackHost($urls)) {
+				$firstError .= ' Для localhost укажите домен из настроек сайта Bitrix (SERVER_NAME)'
+					. ' или URL, доступный PHP с этой среды (OpenServer / VM / контейнер).';
+			}
 			return self::fail($firstError);
 		}
 
@@ -166,6 +170,37 @@ class PageScriptScanner
 	}
 
 	/**
+	 * Origin публичного сайта для пресетов сканера (scheme://SERVER_NAME).
+	 * Без привязки к Docker / OpenServer / VM — берём домен сайта Bitrix.
+	 */
+	public static function getPublicOrigin(): string
+	{
+		$host = self::getSiteServerHost();
+		$scheme = 'http';
+
+		try {
+			$request = \Bitrix\Main\Context::getCurrent()->getRequest();
+			if ($request->isHttps()) {
+				$scheme = 'https';
+			}
+			if ($host === '') {
+				$httpHost = trim((string)$request->getHttpHost());
+				if ($httpHost !== '') {
+					$host = $httpHost;
+				}
+			}
+		} catch (\Throwable $e) {
+			// CLI / нет контекста
+		}
+
+		if ($host === '') {
+			return '';
+		}
+
+		return $scheme . '://' . $host;
+	}
+
+	/**
 	 * @return array{ok: bool, error: ?string, parsed: list<array{src: string, nonBlocking: bool}>}
 	 */
 	private static function fetchParsedScripts(string $pageUrl): array
@@ -180,15 +215,15 @@ class PageScriptScanner
 		$http->setHeader('User-Agent', 'tools.googlepagespeed-scanner/1.0');
 		$http->setHeader('Accept', 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8');
 
-		$body = $http->get($pageUrl);
+		$fetchUrl = self::resolveFetchUrl($pageUrl);
+
+		$body = $http->get($fetchUrl);
 		$status = (int)$http->getStatus();
 
 		if ($body === false || $status < 200 || $status >= 400) {
 			return [
 				'ok' => false,
-				'error' => $status > 0
-					? 'HTTP ' . $status
-					: 'таймаут или сеть',
+				'error' => $status > 0 ? 'HTTP ' . $status : 'таймаут или сеть',
 				'parsed' => [],
 			];
 		}
@@ -205,7 +240,7 @@ class PageScriptScanner
 			];
 		}
 
-		$finalUrl = $pageUrl;
+		$finalUrl = $fetchUrl;
 		if (method_exists($http, 'getEffectiveUrl')) {
 			$effective = $http->getEffectiveUrl();
 			if (is_string($effective) && $effective !== '') {
@@ -218,6 +253,85 @@ class PageScriptScanner
 			'error' => null,
 			'parsed' => self::extractScripts($body, $finalUrl),
 		];
+	}
+
+	/**
+	 * Loopback (localhost / 127.0.0.1) часто недоступен PHP как «сайт»
+	 * (отдельный контейнер, другая VM, другой vhost). Тогда ходим на SERVER_NAME сайта.
+	 * Если SERVER_NAME тоже loopback или пуст — оставляем URL как есть (типичный OpenServer).
+	 */
+	private static function resolveFetchUrl(string $pageUrl): string
+	{
+		$uri = new Uri($pageUrl);
+		$host = strtolower((string)$uri->getHost());
+
+		if (!self::isLoopbackHost($host)) {
+			return $pageUrl;
+		}
+
+		$siteHost = self::getSiteServerHost();
+		$siteHostOnly = strtolower((string)preg_replace('/:\d+$/', '', $siteHost));
+		if ($siteHost === '' || self::isLoopbackHost($siteHostOnly)) {
+			return $pageUrl;
+		}
+
+		$scheme = $uri->getScheme() ?: 'http';
+		$path = $uri->getPath();
+		if ($path === '' || $path === null) {
+			$path = '/';
+		}
+		$query = $uri->getQuery();
+		$fetchUrl = $scheme . '://' . $siteHost . $path;
+		if (is_string($query) && $query !== '') {
+			$fetchUrl .= '?' . $query;
+		}
+
+		return $fetchUrl;
+	}
+
+	/** Домен из настроек сайта Bitrix (без схемы). */
+	private static function getSiteServerHost(): string
+	{
+		if (!class_exists(\CSite::class)) {
+			return '';
+		}
+
+		$by = 'sort';
+		$order = 'asc';
+		$res = \CSite::GetList($by, $order, ['ACTIVE' => 'Y', 'DEFAULT' => 'Y']);
+		if ($row = $res->Fetch()) {
+			$host = trim((string)($row['SERVER_NAME'] ?? ''));
+			if ($host !== '') {
+				return $host;
+			}
+		}
+
+		$res = \CSite::GetList($by, $order, ['ACTIVE' => 'Y']);
+		if ($row = $res->Fetch()) {
+			return trim((string)($row['SERVER_NAME'] ?? ''));
+		}
+
+		return '';
+	}
+
+	private static function isLoopbackHost(string $host): bool
+	{
+		return $host === 'localhost'
+			|| $host === '127.0.0.1'
+			|| $host === '::1'
+			|| $host === '[::1]';
+	}
+
+	/** @param list<string> $urls */
+	private static function listHasLoopbackHost(array $urls): bool
+	{
+		foreach ($urls as $url) {
+			$host = strtolower((string)(parse_url($url, PHP_URL_HOST) ?: ''));
+			if (self::isLoopbackHost($host)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -355,20 +469,18 @@ class PageScriptScanner
 	{
 		$parts = parse_url($normalizedSrc);
 		if ($parts === false) {
-			return mb_substr($normalizedSrc, 0, 120);
+			return mb_substr($normalizedSrc, 0, 160);
 		}
 
 		$path = (string)($parts['path'] ?? '');
 		$host = (string)($parts['host'] ?? '');
 
+		// Свой сайт и локальные пути — только path (без домена), полный каталог.
 		if ($path !== '' && str_starts_with($path, '/')) {
 			if ($host === '' || self::isLikelySameSitePath($path)) {
 				return mb_substr($path, 0, 160);
 			}
-			$file = basename($path);
-			if ($file !== '' && $file !== '/') {
-				return mb_substr($host . '/' . $file, 0, 160);
-			}
+			// Сторонний хост: host + полный path, без обрезки до имени файла
 			return mb_substr($host . $path, 0, 160);
 		}
 
@@ -376,12 +488,13 @@ class PageScriptScanner
 			return mb_substr($host, 0, 120);
 		}
 
-		return mb_substr($normalizedSrc, 0, 120);
+		return mb_substr($normalizedSrc, 0, 160);
 	}
 
 	private static function isLikelySameSitePath(string $path): bool
 	{
-		return (bool)preg_match('#^/(local|upload|images|js|scripts|assets|static)/#i', $path);
+		// local/upload/… и всё /bitrix/ — path без домена в списке правил
+		return (bool)preg_match('#^/(local|upload|images|js|scripts|assets|static|bitrix)/#i', $path);
 	}
 
 	private static function resolveUrl(string $baseUrl, string $src): string
