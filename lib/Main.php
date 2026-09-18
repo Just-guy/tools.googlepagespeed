@@ -2,10 +2,9 @@
 
 namespace Tools\GooglePageSpeed;
 
-use COption;
-use \Bitrix\Main\Application;
-use \Bitrix\Main\Context;
-use Bitrix\Main\Page\Asset;
+use Bitrix\Main\Application;
+use Bitrix\Main\Context;
+use Bitrix\Main\Web\Json;
 
 class Main
 {
@@ -17,10 +16,31 @@ class Main
 		'eliminateStyleSheetsThatBlockDisplay',
 		'eliminateScriptsThatBlockDisplay',
 		'addLoadingLazyAttributeAllTagsImg',
+		'deferYandexMetrika',
+		'deferGoogleAnalytics',
+		// 'deferJivoChat',
+	];
+
+	/** Опции с закомментированной логикой — не показывать и не выполнять. */
+	private const DISABLED_OPTION_CODES = [
+		'DEFER_JIVOCHAT',
+	];
+
+	/** @var array{urls: string[], inlines: string[], stubs: array<string, string>} */
+	private static $deferQueue = [
+		'urls' => [],
+		'inlines' => [],
+		'stubs' => [],
 	];
 
 	public static function OnEndBufferContent(&$content)
 	{
+		self::$deferQueue = [
+			'urls' => [],
+			'inlines' => [],
+			'stubs' => [],
+		];
+
 		if (self::shouldSkipBufferContent($content)) {
 			return;
 		}
@@ -77,6 +97,8 @@ class Main
 				self::addAttributeToMatchingScripts($content, $value);
 			}
 		}
+
+		self::injectDeferRuntime($content);
 	}
 
 	/**
@@ -212,6 +234,208 @@ class Main
 		);
 	}
 
+	/**
+	 * Пресет E: отложить Яндекс.Метрику (idle + interaction).
+	 */
+	public static function deferYandexMetrika(&$content): void
+	{
+		self::queueDeferStub(
+			'ym',
+			'window.ym=window.ym||function(){(window.ym.a=window.ym.a||[]).push(arguments)};window.ym.l=1*new Date();'
+		);
+		self::collectDeferredScripts(
+			$content,
+			'/mc\.yandex\.ru\/(?:metrika|watch)/i',
+			'/ym\s*\(|Ya\.Metrika|Yandex\.Metrika|mc\.yandex\.ru\/metrika/i'
+		);
+	}
+
+	/**
+	 * Пресет E: отложить Google Analytics / gtag.js.
+	 */
+	public static function deferGoogleAnalytics(&$content): void
+	{
+		self::queueDeferStub(
+			'gtag',
+			'window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};'
+		);
+		self::collectDeferredScripts(
+			$content,
+			'/googletagmanager\.com\/gtag\/js|google-analytics\.com\/analytics\.js|www\.google-analytics\.com/i',
+			'/\bgtag\s*\(|function\s+gtag\b|google-analytics\.com\/analytics\.js|gtag\/js\?id=/i'
+		);
+	}
+
+	/**
+	 * Пресет E: отложить JivoChat.
+	 * Временно отключено — не добавлять в ALLOWED_OPTION_METHODS / пресеты.
+	 */
+	// public static function deferJivoChat(&$content): void
+	// {
+	// 	self::collectDeferredScripts(
+	// 		$content,
+	// 		'/code\.jivo\.ru|cdn\.jivo\.ru|jivosite\.com|jivo\.ru\/widget/i',
+	// 		'/jivo_(?:api|onLoadCallback)|jivosite|code\.jivo\.ru/i'
+	// 	);
+	// }
+
+	/**
+	 * Определения пресетов отложенной загрузки для install / миграции БД.
+	 */
+	public static function getDeferredPresetOptionDefinitions(): array
+	{
+		return [
+			[
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'DEFER_YANDEX_METRIKA',
+				'NAME_OPTION' => 'Отложить Яндекс.Метрику (idle / взаимодействие)',
+				'OPTION_ACTION' => 'deferYandexMetrika',
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone',
+			],
+			[
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'DEFER_GOOGLE_ANALYTICS',
+				'NAME_OPTION' => 'Отложить Google Analytics (idle / взаимодействие)',
+				'OPTION_ACTION' => 'deferGoogleAnalytics',
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone',
+			],
+			// [
+			// 	'ACTIVE' => 'N',
+			// 	'CODE_OPTION' => 'DEFER_JIVOCHAT',
+			// 	'NAME_OPTION' => 'Отложить JivoChat (idle / взаимодействие)',
+			// 	'OPTION_ACTION' => 'deferJivoChat',
+			// 	'OPTION_TYPE' => 'function',
+			// 	'LIMITATION' => 'for-everyone',
+			// ],
+		];
+	}
+
+	/**
+	 * Добавляет пресеты в БД, если их ещё нет (для уже установленных модулей).
+	 */
+	public static function ensureDeferredPresetOptions(): void
+	{
+		$existing = [];
+		foreach (self::getOptions([]) as $row) {
+			$code = (string)($row['CODE_OPTION'] ?? '');
+			if ($code !== '') {
+				$existing[$code] = true;
+			}
+		}
+
+		$added = false;
+		foreach (self::getDeferredPresetOptionDefinitions() as $def) {
+			if (isset($existing[$def['CODE_OPTION']])) {
+				continue;
+			}
+			GPSOptionsTable::add($def);
+			$added = true;
+		}
+
+		if ($added) {
+			self::clearRulesCache();
+		}
+	}
+
+	private static function queueDeferStub(string $id, string $js): void
+	{
+		self::$deferQueue['stubs'][$id] = $js;
+	}
+
+	/**
+	 * Убирает подходящие script из HTML и складывает src/inline в очередь отложенной загрузки.
+	 */
+	private static function collectDeferredScripts(string &$content, string $srcRegex, string $inlineBodyRegex): void
+	{
+		$content = preg_replace_callback(
+			'/<script\b([^>]*)>(.*?)<\/script>/is',
+			static function ($match) use ($srcRegex, $inlineBodyRegex) {
+				$attrs = $match[1];
+				$body = $match[2];
+
+				if (preg_match('/\bsrc\s*=\s*([\'"])(.*?)\1/i', $attrs, $srcMatch)) {
+					$src = html_entity_decode($srcMatch[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+					if (preg_match($srcRegex, $src)) {
+						self::$deferQueue['urls'][] = $src;
+						return '';
+					}
+					return $match[0];
+				}
+
+				if ($body !== '' && preg_match($inlineBodyRegex, $body)) {
+					self::$deferQueue['inlines'][] = $body;
+					return '';
+				}
+
+				return $match[0];
+			},
+			$content
+		);
+	}
+
+	private static function injectDeferRuntime(string &$content): void
+	{
+		$urls = array_values(array_unique(array_filter(self::$deferQueue['urls'])));
+		$inlines = array_values(array_filter(self::$deferQueue['inlines'], static function ($code) {
+			return is_string($code) && $code !== '';
+		}));
+		$stubs = array_values(self::$deferQueue['stubs']);
+
+		if ($urls === [] && $inlines === [] && $stubs === []) {
+			return;
+		}
+
+		$urlsJson = Json::encode($urls);
+		$inlinesJson = Json::encode($inlines);
+		$stubsJs = implode("\n", $stubs);
+
+		$runtime = <<<HTML
+<script data-gps-defer-runtime="1">
+(function(){
+{$stubsJs}
+var gpsU={$urlsJson};
+var gpsI={$inlinesJson};
+var gpsDone=false;
+function gpsRun(){
+	console.log('gpsRun');
+	if(gpsDone){return;}
+	gpsDone=true;
+	var i,s;
+	for(i=0;i<gpsU.length;i++){
+		s=document.createElement('script');
+		s.src=gpsU[i];
+		s.async=true;
+		(document.head||document.documentElement).appendChild(s);
+	}
+	for(i=0;i<gpsI.length;i++){
+		s=document.createElement('script');
+		s.text=gpsI[i];
+		(document.head||document.documentElement).appendChild(s);
+	}
+}
+var gpsEv=['scroll','mousemove','touchstart','keydown'];
+for(var e=0;e<gpsEv.length;e++){
+	window.addEventListener(gpsEv[e],gpsRun,{once:true,passive:true});
+}
+if('requestIdleCallback' in window){
+	requestIdleCallback(gpsRun,{timeout:5000});
+}else{
+	window.addEventListener('load',function(){setTimeout(gpsRun,2500);});
+}
+})();
+</script>
+HTML;
+
+		if (preg_match('/<\/body>/i', $content)) {
+			$content = preg_replace('/<\/body>/i', $runtime . "\n</body>", $content, 1);
+			return;
+		}
+
+		$content .= $runtime;
+	}
+
 	public static function getLinksCssStyles($filter = [])
 	{
 		$rows = self::getCachedTableRows('css_styles', ConnectedCssStyleTable::class);
@@ -227,7 +451,12 @@ class Main
 	public static function getOptions($filter = [])
 	{
 		$rows = self::getCachedTableRows('options', GPSOptionsTable::class);
-		return self::filterCachedRows($rows, $filter);
+		$rows = self::filterCachedRows($rows, $filter);
+
+		return array_values(array_filter($rows, static function ($row) {
+			$code = (string)($row['CODE_OPTION'] ?? '');
+			return $code === '' || !in_array($code, self::DISABLED_OPTION_CODES, true);
+		}));
 	}
 
 	public static function clearRulesCache(): void
@@ -248,7 +477,7 @@ class Main
 		}
 
 		$rows = [];
-		$result = $tableClass::getList(['select' => ['*']]);
+		$result = $tableClass::getList(['select' => ['*'], 'order' => ['ID' => 'ASC']]);
 		while ($row = $result->fetch()) {
 			$rows[] = $row;
 		}
@@ -275,11 +504,11 @@ class Main
 
 	public static function thisRobot()
 	{
-		$userAgent = \Bitrix\Main\Application::getInstance()->getContext()->getServer()->getUserAgent();
-		if (strpos($userAgent, "Lighthouse")) {
+		$userAgent = Application::getInstance()->getContext()->getServer()->getUserAgent();
+		if (strpos($userAgent, "Lighthouse") !== false) {
 			return true;
-		} else {
-			return false;
 		}
+
+		return false;
 	}
 }

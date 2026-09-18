@@ -28,6 +28,9 @@ if ($POST_RIGHT < "S") {
 // подключение модуля
 Loader::includeModule($module_id);
 
+// Пресеты отложенной загрузки для уже установленных модулей
+Tools\GooglePageSpeed\Main::ensureDeferredPresetOptions();
+
 $aTabs = [
 	[
 		"DIV"   => "edit1",

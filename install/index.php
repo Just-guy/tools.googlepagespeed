@@ -123,6 +123,11 @@ class Tools_googlepagespeed extends CModule
 			],
 		];
 
+		$options = array_merge(
+			$options,
+			Tools\GooglePageSpeed\Main::getDeferredPresetOptionDefinitions()
+		);
+
 		foreach ($options as $valueOption) {
 			Tools\GooglePageSpeed\GPSOptionsTable::add([
 				"ACTIVE" => $valueOption['ACTIVE'],
