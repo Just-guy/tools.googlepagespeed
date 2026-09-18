@@ -28,7 +28,8 @@ if ($POST_RIGHT < "S") {
 // подключение модуля
 Loader::includeModule($module_id);
 
-// Пресеты отложенной загрузки для уже установленных модулей
+// Опции img-атрибутов и пресеты отложенной загрузки для уже установленных модулей
+Tools\GooglePageSpeed\OptionActions::ensureImgAttributeOptions();
 Tools\GooglePageSpeed\DeferredPresets::ensureOptions();
 
 // AJAX: скан скриптов публичной страницы

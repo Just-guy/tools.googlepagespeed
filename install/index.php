@@ -125,6 +125,7 @@ class Tools_googlepagespeed extends CModule
 
 		$options = array_merge(
 			$options,
+			Tools\GooglePageSpeed\OptionActions::getImgAttributeOptionDefinitions(),
 			Tools\GooglePageSpeed\DeferredPresets::getOptionDefinitions()
 		);
 

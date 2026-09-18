@@ -19,7 +19,7 @@
 
 Это дополнение поверх шаблона, не замена нормальной оптимизации. После установки всё выключено — работает только после включения опций и «Применить».
 
-Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.2.0`).
+Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.3.2`).
 
 ## Структура
 
@@ -52,7 +52,8 @@
 - Preload/`link` вставляются **сразу после** открывающего `<head>`, без затирания тега и атрибутов (`HtmlBuffer`).
 - `async`/`defer` вешаются на весь открывающий `<script src="...">`, не на фрагмент `src`.
 - Отложенный CSS: `media="print" onload="this.media='all'"` + `<noscript>` с исходным тегом; `media=print` не трогать повторно (`OptionActions`).
-- Lazy: **первое** `<img>` в HTML не трогать (обычно LCP); также не трогать, если уже есть `loading` / `fetchpriority` / `decoding` / `data-src`.
+- Lazy / decoding: кандидат LCP = **первое осмысленное** `<img>` (не шум) — его не трогают; остальным осмысленным — атрибут. Шум: внутри `<noscript>`, пиксели счётчиков (`IMG_PIXEL_MARKERS`), нет/`data:` src, только `data-src`, `display:none` / `left:-NNNpx`, `width=1`+`height=1`. Обход через `mapImgTags` + диапазоны noscript.
+- **Img-атрибуты (v1.3.x):** `addDecodingAsyncAttributeAllTagsImg` (+ lazy). Опция авто-`fetchpriority` **удалена** (v1.3.2): эвристика «первый img» ненадёжна (пиксели, неверный LCP); ensure удаляет `ADD_FETCHPRIORITY_HIGH_FIRST_IMG` из БД. Ensure: `OptionActions::ensureImgAttributeOptions()`.
 - Опции типа `function`: реестр `OptionActions::ACTIONS` (имя → class::method); `unserialize` без объектов (`allowed_classes => false`).
 - Правила (опции / link / script) кешируются в ManagedCache (`SettingsProvider`, `CACHE_DIR = tools_googlepagespeed`, TTL 3600); при сохранении — `SettingsProvider::clearCache()`.
 - Робот PageSpeed: UA содержит `"Lighthouse"` (`RobotDetector::isPageSpeedRobot`). Область «только для робота» — осознанный компромисс, не включать «на всякий случай».
@@ -123,12 +124,12 @@
 ### Приоритетный пакет (высокий эффект, мало риска)
 
 1. **`crossorigin` + `type` для preload шрифтов** — в справочнике уже есть, в генерации `<link>` — нет.
-2. **`fetchpriority="high"` на первое/LCP `<img>`** (опционально `decoding="async"` на остальные).
+2. ~~**`fetchpriority="high"` на первое/LCP `<img>`**~~ — снято (v1.3.2): авто-эвристика ненадёжна; для LCP лучше точечный preload / правка шаблона. `decoding="async"` на остальные — оставлено.
 3. **`loading="lazy"` для `<iframe>` / `<video>`**.
 4. **Исключения для отложенного CSS** — список URL/regex «не трогать» (критический CSS), меньше FOUC.
 5. **Фиксированный `href` для hints** — явный `preconnect`/`dns-prefetch` без обязательного совпадения URL в HTML.
 
-Сделано: пресеты отложенной загрузки Метрика / GA (idle+interaction); Jivo — код закомментирован. См. ключ. решения выше.
+Сделано: пресеты отложенной загрузки Метрика / GA (idle+interaction); Jivo — код закомментирован; decoding для img (fetchpriority-опция снята). См. ключ. решения выше.
 
 ### Средний приоритет (нужна аккуратность)
 
@@ -147,7 +148,7 @@
 15. ~~Скан / discovery скриптов~~ — сделано (v1.2.0): HTTP-скан + каталог hide/presets.
 16. Тот же сканер для вкладки **link** (stylesheet/font → preload).
 
-Рекомендуемый следующий шаг при старте работ: пункты **1–4**.
+Рекомендуемый следующий шаг при старте работ: пункты **1, 3–4**.
 
 ## Учёт времени (работы по модулю)
 
