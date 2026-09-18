@@ -512,7 +512,6 @@ elseif ($DB->GetErrorMessage() != "")
 					<div class="tools-gps-scan" id="tools-gps-script-scan">
 						<div class="tools-gps-scan__head">
 							<div class="tools-gps-scan__title">Сканирование страницы</div>
-							<div class="tools-gps-scan__subtitle">HTTP-запрос публичной страницы → список &lt;script src&gt; без ядра Bitrix и без Метрики/GA. Скрипты из пресетов добавляются в правила автоматически.</div>
 						</div>
 						<div class="tools-gps-scan__presets" id="tools-gps-scan-presets">
 							<?php foreach (Tools\GooglePageSpeed\ScriptScanCatalog::getScanUrlPresets() as $scanPreset) { ?>
