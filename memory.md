@@ -25,7 +25,14 @@
 
 | Путь | Назначение |
 |------|------------|
-| `lib/Main.php` | Публичная обработка буфера, кеш правил, детект робота |
+| `lib/Main.php` | Оркестратор `OnEndBufferContent` |
+| `lib/BufferGuard.php` | Пропуск admin / AJAX / CLI / ответов без `<head>` |
+| `lib/HtmlBuffer.php` | Вставка после `<head>`, async/defer на `<script>` |
+| `lib/RobotDetector.php` | Детект UA Lighthouse |
+| `lib/SettingsProvider.php` | Чтение настроек модуля (опции / link / script) через ManagedCache |
+| `lib/OptionActions.php` | Действия опций + реестр `OPTION_ACTION` |
+| `lib/ScriptDeferral.php` | Очередь отложенных скриптов, stubs, runtime |
+| `lib/DeferredPresets.php` | Определения пресетов E + ensure в БД |
 | `lib/GPSOptions.php` | ORM опций |
 | `lib/ConnectedCssStyle.php` | ORM правил `<link>` (preload и т.п.) |
 | `lib/ConnectedJsScript.php` | ORM правил `<script>` (async/defer) |
@@ -38,16 +45,56 @@
 
 ## Ключевые решения (код)
 
-- Обработка только публичного HTML: пропуск admin, AJAX, CLI, ответов без `<head>` (`shouldSkipBufferContent`).
-- Preload/`link` вставляются **сразу после** открывающего `<head>`, без затирания тега и атрибутов.
+- **Разбиение `Main` (вариант A):** оркестрация в `Main`, домены — отдельные классы (см. таблицу структуры). Публичный API админки/install/ORM: `SettingsProvider`, `DeferredPresets` (не фасады на `Main`).
+- Обработка только публичного HTML: пропуск admin, AJAX, CLI, ответов без `<head>` (`BufferGuard::shouldSkip`).
+- Preload/`link` вставляются **сразу после** открывающего `<head>`, без затирания тега и атрибутов (`HtmlBuffer`).
 - `async`/`defer` вешаются на весь открывающий `<script src="...">`, не на фрагмент `src`.
-- Отложенный CSS: `media="print" onload="this.media='all'"` + `<noscript>` с исходным тегом; `media=print` не трогать повторно.
+- Отложенный CSS: `media="print" onload="this.media='all'"` + `<noscript>` с исходным тегом; `media=print` не трогать повторно (`OptionActions`).
 - Lazy: **первое** `<img>` в HTML не трогать (обычно LCP); также не трогать, если уже есть `loading` / `fetchpriority` / `decoding` / `data-src`.
-- Опции типа `function`: разрешены только методы из `ALLOWED_OPTION_METHODS`; `unserialize` без объектов (`allowed_classes => false`).
-- Правила (опции / link / script) кешируются в ManagedCache (`CACHE_DIR = tools_googlepagespeed`, TTL 3600); при сохранении в админке — `clearRulesCache()`.
-- Робот PageSpeed: UA содержит `"Lighthouse"` (`thisRobot`). Область «только для робота» — осознанный компромисс, не включать «на всякий случай».
+- Опции типа `function`: реестр `OptionActions::ACTIONS` (имя → class::method); `unserialize` без объектов (`allowed_classes => false`).
+- Правила (опции / link / script) кешируются в ManagedCache (`SettingsProvider`, `CACHE_DIR = tools_googlepagespeed`, TTL 3600); при сохранении — `SettingsProvider::clearCache()`.
+- Робот PageSpeed: UA содержит `"Lighthouse"` (`RobotDetector::isPageSpeedRobot`). Область «только для робота» — осознанный компромисс, не включать «на всякий случай».
 - Открывающие теги PHP — только `<?php` (короткие `<?` убраны).
-- **Пресеты отложенной загрузки (вариант E, v1.1.0):** опции-функции `deferYandexMetrika`, `deferGoogleAnalytics` (`deferJivoChat` — закомментирован). Собирают подходящие `<script src>` и inline в очередь, вставляют stub (ym/gtag) + один runtime перед `</body>`: idle (`requestIdleCallback`, timeout 5s) или первое взаимодействие. Для уже установленного модуля строки опций дописываются через `ensureDeferredPresetOptions()` при открытии админки. Не путать с опциями «Вырезать…».
+- **Пресеты отложенной загрузки (вариант E, v1.1.0):** `ScriptDeferral` + опции `deferYandexMetrika` / `deferGoogleAnalytics` (`deferJivoChat` — закомментирован). Stub (ym/gtag) + runtime перед `</body>`: idle или первое взаимодействие. Строки в БД: `DeferredPresets::ensureOptions()` при открытии админки. Не путать с опциями «Вырезать…». Подробная карта вариантов A–F — раздел ниже «Отложенная загрузка (варианты)».
+
+## Отложенная загрузка (варианты)
+
+Обсуждение для доработок модуля. Модель: правка HTML в `OnEndBufferContent` + админ-переключатели. Термины: **stub** — заглушка API (`ym`/`gtag`) до подгрузки скрипта; **idle** — `requestIdleCallback` (простой браузера) + `timeout`, иначе скрипт всё равно стартует по таймеру.
+
+### Сводная таблица
+
+| Вариант | Что откладывает | Как / когда грузит | Как задают цели | Статус |
+|--------|-----------------|--------------------|-----------------|--------|
+| **A** idle / interaction | Внешние/inline `<script>` по URL (аналитика, теги, чаты) | Stub + лоадер; **жест** (scroll/touch/keydown) **или idle** (timeout ~5 с / fallback load+2.5 с) — что раньше | Ручной regex URL (как вкладка script) | Частично через **E** (тот же механизм) |
+| **B** visible (viewport) | Скрипты/блоки ниже fold (карты, виджеты) | `IntersectionObserver` (+ rootMargin) | Ручной regex URL **и/или** кусок разметки (блок) | Не сделано |
+| **C** facade / клик | Тяжёлые iframe (YouTube, иногда карта) | Заглушка (превью/кнопка); грузит **только по клику** | Правила на тип iframe / URL | Не сделано |
+| **D** native lazy media | `<iframe>`, `<video>` | Атрибут `loading="lazy"` (решает браузер у viewport) | Галочки в опциях | Не сделано (в roadmap п.3) |
+| **E** пресеты | Готовые наборы (Метрика, GA, …) | Внутри = **A** (иногда кусок **B**) | Чекбоксы без ручного regex | **Сделано:** Метрика, GA; Jivo закомментирован |
+| **F** «только для робота» | Не способ загрузки | Область действия правила | Уже есть `LIMITATION` for-everyone / for-gps-robot | **Уже было** — не отдельная фича |
+
+### Разница и пересечения
+
+- **A vs E:** один фронтовый механизм; E — удобные чекбоксы с зашитыми паттернами/stubs; A — универсальные ручные URL.
+- **A vs B:** A — по времени/жесту для любых URL; B — по **видимости** блока/скрипта на экране. Цели B: URL и/или фрагмент HTML.
+- **C vs D:** одна задача для media («не грузить iframe сразу»), разная агрессия. **На одном iframe не включать оба:** C заменяет iframe до клика, D вешает lazy на существующий. В модуле — два режима на выбор.
+- **F:** не новый способ отложить; это уже существующий селект области. Варианты A–E могут работать «для всех» или «только для робота».
+
+### Runtime пресета E (как сейчас в коде)
+
+1. Подходящие `<script src>` и inline убираются из первого кадра.
+2. Stub: `ym` (Метрика), `dataLayer`+`gtag` (GA); у Jivo stub не планировался.
+3. Один `<script data-gps-defer-runtime>` перед `</body>`: очередь URL + inline → `gpsRun`.
+4. Триггеры `gpsRun`: interaction **или** idle(+timeout). Без жеста скрипт всё равно подгрузится через несколько секунд.
+5. Не включать одновременно «Вырезать…» и «Отложить…» на одних посетителях — вырезание съест теги раньше.
+6. На сайте-носителе шаблонный `isLighthouse()` может **не выводить** Метрику роботу — тогда модулю нечего откладывать; проверка пресета — в обычном Chrome (исходник + Network).
+
+### Рекомендуемый порядок внедрения (если продолжать)
+
+1. Допилить/стабилизировать **E** (уже база).
+2. **D** — дешёвый native lazy iframe/video.
+3. **A** как расширение вкладки script (стратегия idle/interaction рядом с async/defer).
+4. **B** для карт/ниже fold.
+5. **C** точечно под YouTube/жёсткий TBT.
 
 ## Админка (UX)
 

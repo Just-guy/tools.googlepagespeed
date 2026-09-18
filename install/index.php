@@ -125,7 +125,7 @@ class Tools_googlepagespeed extends CModule
 
 		$options = array_merge(
 			$options,
-			Tools\GooglePageSpeed\Main::getDeferredPresetOptionDefinitions()
+			Tools\GooglePageSpeed\DeferredPresets::getOptionDefinitions()
 		);
 
 		foreach ($options as $valueOption) {

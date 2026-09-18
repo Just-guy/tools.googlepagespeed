@@ -66,16 +66,16 @@ class ConnectedJsScriptTable extends Entity\DataManager
 
 	public static function onAfterAdd(Entity\Event $event)
 	{
-		Main::clearRulesCache();
+		SettingsProvider::clearCache();
 	}
 
 	public static function onAfterUpdate(Entity\Event $event)
 	{
-		Main::clearRulesCache();
+		SettingsProvider::clearCache();
 	}
 
 	public static function onAfterDelete(Entity\Event $event)
 	{
-		Main::clearRulesCache();
+		SettingsProvider::clearCache();
 	}
 }

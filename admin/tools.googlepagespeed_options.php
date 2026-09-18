@@ -29,7 +29,7 @@ if ($POST_RIGHT < "S") {
 Loader::includeModule($module_id);
 
 // Пресеты отложенной загрузки для уже установленных модулей
-Tools\GooglePageSpeed\Main::ensureDeferredPresetOptions();
+Tools\GooglePageSpeed\DeferredPresets::ensureOptions();
 
 $aTabs = [
 	[
@@ -53,9 +53,9 @@ $aTabs = [
 ];
 $tabControl = new CAdminTabControl("tabControl", $aTabs);
 
-$arrayLinkCssStyles = Tools\GooglePageSpeed\Main::getLinksCssStyles();
-$arrayLinkJsScripts = Tools\GooglePageSpeed\Main::getLinksJsScripts();
-$arrayOptions = Tools\GooglePageSpeed\Main::getOptions();
+$arrayLinkCssStyles = Tools\GooglePageSpeed\SettingsProvider::getLinksCssStyles();
+$arrayLinkJsScripts = Tools\GooglePageSpeed\SettingsProvider::getLinksJsScripts();
+$arrayOptions = Tools\GooglePageSpeed\SettingsProvider::getOptions();
 $limitation = ['for-everyone' => 'Для всех', 'for-gps-robot' => 'Для робота Google PS'];
 $roleLinkCssStyles = ['preload', 'prefetch', 'preconnect', 'dns-prefetch', 'prerender'];
 $typeLinkCssStyles = ['style', 'script', 'font', 'fetch', 'image', 'track'];
@@ -191,7 +191,7 @@ if ($request["Update"] && check_bitrix_sessid()) {
 	}
 	// === LinksJsScripts
 
-	Tools\GooglePageSpeed\Main::clearRulesCache();
+	Tools\GooglePageSpeed\SettingsProvider::clearCache();
 }
 
 
