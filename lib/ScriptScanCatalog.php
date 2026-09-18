@@ -103,6 +103,20 @@ class ScriptScanCatalog
 	}
 
 	/**
+	 * Пресеты URL для поля сканера (относительные пути; в UI клеятся к origin сайта).
+	 *
+	 * @return array<int, array{id: string, label: string, path: string}>
+	 */
+	public static function getScanUrlPresets(): array
+	{
+		return [
+			['id' => 'home', 'label' => 'Главная', 'path' => '/'],
+			['id' => 'catalog', 'label' => 'Каталог', 'path' => '/catalog/'],
+			['id' => 'contacts', 'label' => 'Контакты', 'path' => '/contacts/'],
+		];
+	}
+
+	/**
 	 * @return array{reason: string}|null
 	 */
 	public static function matchHide(string $src): ?array

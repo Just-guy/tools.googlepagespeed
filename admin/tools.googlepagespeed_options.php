@@ -514,12 +514,31 @@ elseif ($DB->GetErrorMessage() != "")
 							<div class="tools-gps-scan__title">Сканирование страницы</div>
 							<div class="tools-gps-scan__subtitle">HTTP-запрос публичной страницы → список &lt;script src&gt; без ядра Bitrix и без Метрики/GA. Скрипты из пресетов добавляются в правила автоматически.</div>
 						</div>
+						<div class="tools-gps-scan__presets" id="tools-gps-scan-presets">
+							<?php foreach (Tools\GooglePageSpeed\ScriptScanCatalog::getScanUrlPresets() as $scanPreset) { ?>
+								<button
+									type="button"
+									class="tools-gps-scan__preset-btn"
+									data-scan-path="<?= htmlspecialcharsbx($scanPreset['path']) ?>"
+								><?= $scanPreset['label'] ?></button>
+							<?php } ?>
+						</div>
+						<div class="tools-gps-scan__hint">
+							Несколько URL — через запятую, точку с запятой или с новой строки. Максимум 5. Пример:<br>
+							<code>https://example.com/, https://example.com/catalog/</code>
+						</div>
 						<div class="tools-gps-scan__form">
-							<input type="url" class="tools-gps-scan__url" id="tools-gps-scan-url" placeholder="https://example.com/" value="/" size="60">
+							<textarea
+								class="tools-gps-scan__url"
+								id="tools-gps-scan-url"
+								rows="2"
+								placeholder="https://example.com/"
+							></textarea>
 							<input type="button" class="tools-gps-btn adm-btn-save" id="tools-gps-scan-run" value="Сканировать">
 						</div>
 						<div class="tools-gps-scan__stats" id="tools-gps-scan-stats" hidden></div>
 						<div class="tools-gps-scan__error" id="tools-gps-scan-error" hidden></div>
+						<div class="tools-gps-scan__warn" id="tools-gps-scan-warn" hidden></div>
 						<div class="tools-gps-scan__list" id="tools-gps-scan-list"></div>
 					</div>
 				</div>
@@ -698,10 +717,50 @@ elseif ($DB->GetErrorMessage() != "")
 
 	(function initScanUrlDefault() {
 		let input = document.getElementById('tools-gps-scan-url');
-		if (input && (!input.value || input.value === '/')) {
+		if (input && !(input.value || '').trim()) {
 			input.value = window.location.origin + '/';
 		}
 	})();
+
+	function gpsSiteOrigin() {
+		// Админка часто на том же хосте, что и сайт; origin подходит для пресетов путей.
+		return window.location.origin;
+	}
+
+	function gpsResolveScanPath(path) {
+		path = path || '/';
+		if (!path.startsWith('/')) {
+			path = '/' + path;
+		}
+		return gpsSiteOrigin() + path;
+	}
+
+	function gpsAppendScanUrl(url) {
+		let input = document.getElementById('tools-gps-scan-url');
+		if (!input || !url) {
+			return;
+		}
+		let current = (input.value || '').trim();
+		if (!current) {
+			input.value = url;
+			return;
+		}
+		let parts = current.split(/[\n\r,;]+/).map((p) => p.trim()).filter(Boolean);
+		let needle = url.toLowerCase();
+		let exists = parts.some((p) => p.toLowerCase() === needle);
+		if (exists) {
+			return;
+		}
+		input.value = current + '\n' + url;
+	}
+
+	document.getElementById('tools-gps-scan-presets')?.addEventListener('click', (event) => {
+		let btn = event.target.closest('.tools-gps-scan__preset-btn');
+		if (!btn) {
+			return;
+		}
+		gpsAppendScanUrl(gpsResolveScanPath(btn.getAttribute('data-scan-path') || '/'));
+	});
 
 	function gpsCollectExistingJsParts() {
 		let parts = [];
@@ -797,17 +856,29 @@ elseif ($DB->GetErrorMessage() != "")
 		let statsEl = document.getElementById('tools-gps-scan-stats');
 		let listEl = document.getElementById('tools-gps-scan-list');
 		let errorEl = document.getElementById('tools-gps-scan-error');
+		let warnEl = document.getElementById('tools-gps-scan-warn');
 		if (!statsEl || !listEl || !errorEl) {
 			return;
 		}
 
 		errorEl.hidden = true;
 		errorEl.textContent = '';
+		if (warnEl) {
+			if (data.error) {
+				warnEl.hidden = false;
+				warnEl.textContent = data.error;
+			} else {
+				warnEl.hidden = true;
+				warnEl.textContent = '';
+			}
+		}
 
 		let s = data.stats || {};
+		let scannedN = (data.scannedUrls && data.scannedUrls.length) ? data.scannedUrls.length : 0;
 		statsEl.hidden = false;
 		statsEl.innerHTML =
-			'Найдено: <strong>' + (s.found || 0) + '</strong>' +
+			'Страниц: <strong>' + scannedN + '</strong>' +
+			' · найдено: <strong>' + (s.found || 0) + '</strong>' +
 			' · в списке: <strong>' + (s.shown || 0) + '</strong>' +
 			' · скрыто ядро: <strong>' + (s.hiddenCore || 0) + '</strong>' +
 			' · скрыто аналитика: <strong>' + (s.hiddenAnalytics || 0) + '</strong>' +
@@ -866,12 +937,16 @@ elseif ($DB->GetErrorMessage() != "")
 	document.getElementById('tools-gps-scan-run')?.addEventListener('click', () => {
 		let urlInput = document.getElementById('tools-gps-scan-url');
 		let errorEl = document.getElementById('tools-gps-scan-error');
+		let warnEl = document.getElementById('tools-gps-scan-warn');
 		let btn = document.getElementById('tools-gps-scan-run');
 		let pageUrl = (urlInput?.value || '').trim();
 		if (!pageUrl) {
 			if (errorEl) {
 				errorEl.hidden = false;
 				errorEl.textContent = 'Укажите URL страницы.';
+			}
+			if (warnEl) {
+				warnEl.hidden = true;
 			}
 			return;
 		}
@@ -899,6 +974,9 @@ elseif ($DB->GetErrorMessage() != "")
 						errorEl.hidden = false;
 						errorEl.textContent = (data && data.error) ? data.error : 'Ошибка сканирования.';
 					}
+					if (warnEl) {
+						warnEl.hidden = true;
+					}
 					document.getElementById('tools-gps-scan-stats').hidden = true;
 					document.getElementById('tools-gps-scan-list').innerHTML = '';
 					return;
@@ -912,10 +990,11 @@ elseif ($DB->GetErrorMessage() != "")
 					}
 				});
 
-				// обновить статусы «уже в правилах» после автодобавления
 				gpsRenderScanResults({
 					ok: true,
+					error: data.error,
 					stats: data.stats,
+					scannedUrls: data.scannedUrls,
 					scripts: (data.scripts || []).map((item) => {
 						let copy = Object.assign({}, item);
 						if (gpsIsJsPartAlreadyInForm(copy.publicPart)) {
@@ -1152,15 +1231,54 @@ elseif ($DB->GetErrorMessage() != "")
 	.tools-gps-scan__subtitle {
 		font-size: 12px;
 		color: #64748b;
-		margin-bottom: 12px;
+		margin-bottom: 10px;
 		line-height: 1.45;
+	}
+
+	.tools-gps-scan__presets {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-bottom: 8px;
+	}
+
+	.tools-gps-scan__preset-btn {
+		appearance: none;
+		border: 1px solid #cbd5e1;
+		background: #f8fafc;
+		color: #334155;
+		border-radius: 999px;
+		padding: 4px 10px;
+		font-size: 12px;
+		line-height: 1.2;
+		cursor: pointer;
+	}
+
+	.tools-gps-scan__preset-btn:hover {
+		border-color: #94a3b8;
+		background: #f1f5f9;
+	}
+
+	.tools-gps-scan__hint {
+		font-size: 11px;
+		color: #64748b;
+		line-height: 1.45;
+		margin-bottom: 10px;
+	}
+
+	.tools-gps-scan__hint code {
+		font-size: 11px;
+		color: #0f172a;
+		background: #f1f5f9;
+		padding: 1px 4px;
+		border-radius: 3px;
 	}
 
 	.tools-gps-scan__form {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 8px;
-		align-items: center;
+		align-items: flex-start;
 		margin-bottom: 10px;
 	}
 
@@ -1168,11 +1286,15 @@ elseif ($DB->GetErrorMessage() != "")
 		flex: 1 1 160px;
 		min-width: 120px;
 		max-width: 100%;
-		height: 30px;
-		padding: 0 10px;
+		min-height: 54px;
+		padding: 8px 10px;
 		border: 1px solid #c6cdd3;
 		border-radius: 4px;
 		box-sizing: border-box;
+		resize: vertical;
+		font-family: inherit;
+		font-size: 13px;
+		line-height: 1.4;
 	}
 
 	.tools-gps-scan__stats {
@@ -1187,6 +1309,16 @@ elseif ($DB->GetErrorMessage() != "")
 		color: #b91c1c;
 		background: #fef2f2;
 		border: 1px solid #fecaca;
+		border-radius: 4px;
+		padding: 8px 10px;
+		margin-bottom: 10px;
+	}
+
+	.tools-gps-scan__warn {
+		font-size: 12px;
+		color: #92400e;
+		background: #fffbeb;
+		border: 1px solid #fde68a;
 		border-radius: 4px;
 		padding: 8px 10px;
 		margin-bottom: 10px;

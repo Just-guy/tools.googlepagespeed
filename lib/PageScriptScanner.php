@@ -7,11 +7,13 @@ use Bitrix\Main\Web\Uri;
 
 /**
  * HTTP-скан публичной страницы: собирает &lt;script src&gt;, фильтрует и классифицирует.
+ * Поддерживает несколько URL в одном запросе (через запятую, ; или перевод строки).
  */
 class PageScriptScanner
 {
 	private const TIMEOUT = 12;
 	private const MAX_BODY_BYTES = 2097152; // 2 MiB
+	private const MAX_URLS = 5;
 
 	/**
 	 * @param string[] $existingPublicParts уже добавленные в правила STRING_PUBLIC_PART
@@ -19,25 +21,155 @@ class PageScriptScanner
 	 *   ok: bool,
 	 *   error: ?string,
 	 *   stats: array<string, int>,
-	 *   scripts: list<array<string, mixed>>
+	 *   scripts: list<array<string, mixed>>,
+	 *   scannedUrls: list<string>,
+	 *   failedUrls: list<array{url: string, error: string}>
 	 * }
 	 */
-	public static function scan(string $pageUrl, array $existingPublicParts = []): array
+	public static function scan(string $pageUrlInput, array $existingPublicParts = []): array
 	{
-		$pageUrl = trim($pageUrl);
-		if ($pageUrl === '') {
+		$urls = self::parseUrlList($pageUrlInput);
+		if ($urls === []) {
 			return self::fail('Укажите URL страницы.');
 		}
 
-		if (!preg_match('#^https?://#i', $pageUrl)) {
+		if (count($urls) > self::MAX_URLS) {
+			return self::fail('Слишком много URL (максимум ' . self::MAX_URLS . ').');
+		}
+
+		$existingNormalized = [];
+		foreach ($existingPublicParts as $part) {
+			$part = trim((string)$part);
+			if ($part !== '') {
+				$existingNormalized[] = mb_strtolower($part);
+			}
+		}
+
+		$stats = self::emptyStats();
+		$scripts = [];
+		$seenPublic = [];
+		$scannedUrls = [];
+		$failedUrls = [];
+
+		foreach ($urls as $pageUrl) {
+			$one = self::fetchParsedScripts($pageUrl);
+			if (!$one['ok']) {
+				$failedUrls[] = ['url' => $pageUrl, 'error' => (string)$one['error']];
+				continue;
+			}
+
+			$scannedUrls[] = $pageUrl;
+			$stats['found'] += count($one['parsed']);
+
+			foreach ($one['parsed'] as $item) {
+				self::classifyInto(
+					$item,
+					$stats,
+					$scripts,
+					$seenPublic,
+					$existingNormalized
+				);
+			}
+		}
+
+		if ($scannedUrls === []) {
+			$firstError = $failedUrls[0]['error'] ?? 'Не удалось загрузить страницы.';
+			if (count($failedUrls) > 1) {
+				$firstError .= ' (ошибок: ' . count($failedUrls) . ')';
+			}
+			return self::fail($firstError);
+		}
+
+		usort($scripts, static function ($a, $b) {
+			$ap = $a['preset'] !== null ? 0 : 1;
+			$bp = $b['preset'] !== null ? 0 : 1;
+			if ($ap !== $bp) {
+				return $ap - $bp;
+			}
+			return strcmp($a['publicPart'], $b['publicPart']);
+		});
+
+		$error = null;
+		if ($failedUrls !== []) {
+			$parts = [];
+			foreach ($failedUrls as $fail) {
+				$parts[] = $fail['url'] . ' — ' . $fail['error'];
+			}
+			$error = 'Часть URL не удалось просканировать: ' . implode('; ', $parts);
+		}
+
+		return [
+			'ok' => true,
+			'error' => $error,
+			'stats' => $stats,
+			'scripts' => $scripts,
+			'scannedUrls' => $scannedUrls,
+			'failedUrls' => $failedUrls,
+		];
+	}
+
+	/**
+	 * Разбор списка URL: перевод строки, запятая или точка с запятой.
+	 *
+	 * @return list<string>
+	 */
+	public static function parseUrlList(string $raw): array
+	{
+		$raw = trim($raw);
+		if ($raw === '') {
+			return [];
+		}
+
+		$chunks = preg_split('/[\n\r,;]+/', $raw) ?: [];
+		$urls = [];
+		$seen = [];
+
+		foreach ($chunks as $chunk) {
+			$url = self::normalizePageUrl(trim($chunk));
+			if ($url === '') {
+				continue;
+			}
+			$key = mb_strtolower($url);
+			if (isset($seen[$key])) {
+				continue;
+			}
+			$seen[$key] = true;
+			$urls[] = $url;
+		}
+
+		return $urls;
+	}
+
+	private static function normalizePageUrl(string $pageUrl): string
+	{
+		if ($pageUrl === '') {
+			return '';
+		}
+
+		// Только путь — без хоста сканер не знает сайт (в UI пресеты клеят origin).
+		if (str_starts_with($pageUrl, '/') && !str_starts_with($pageUrl, '//')) {
+			return '';
+		}
+
+		if (str_starts_with($pageUrl, '//')) {
+			$pageUrl = 'https:' . $pageUrl;
+		} elseif (!preg_match('#^https?://#i', $pageUrl)) {
 			$pageUrl = 'https://' . ltrim($pageUrl, '/');
 		}
 
 		$uri = new Uri($pageUrl);
 		if ($uri->getHost() === '') {
-			return self::fail('Некорректный URL.');
+			return '';
 		}
 
+		return $pageUrl;
+	}
+
+	/**
+	 * @return array{ok: bool, error: ?string, parsed: list<array{src: string, nonBlocking: bool}>}
+	 */
+	private static function fetchParsedScripts(string $pageUrl): array
+	{
 		$http = new HttpClient([
 			'redirect' => true,
 			'redirectMax' => 5,
@@ -52,11 +184,13 @@ class PageScriptScanner
 		$status = (int)$http->getStatus();
 
 		if ($body === false || $status < 200 || $status >= 400) {
-			return self::fail(
-				$status > 0
-					? 'Страница недоступна (HTTP ' . $status . ').'
-					: 'Не удалось загрузить страницу (таймаут или сеть).'
-			);
+			return [
+				'ok' => false,
+				'error' => $status > 0
+					? 'HTTP ' . $status
+					: 'таймаут или сеть',
+				'parsed' => [],
+			];
 		}
 
 		if (strlen($body) > self::MAX_BODY_BYTES) {
@@ -64,7 +198,11 @@ class PageScriptScanner
 		}
 
 		if (!preg_match('/<html\b/i', $body) && !preg_match('/<head\b/i', $body)) {
-			return self::fail('Ответ не похож на HTML (возможно, редирект на авторизацию или JSON).');
+			return [
+				'ok' => false,
+				'error' => 'ответ не HTML',
+				'parsed' => [],
+			];
 		}
 
 		$finalUrl = $pageUrl;
@@ -74,101 +212,79 @@ class PageScriptScanner
 				$finalUrl = $effective;
 			}
 		}
-		$parsed = self::extractScripts($body, $finalUrl);
-
-		$stats = [
-			'found' => count($parsed),
-			'hiddenCore' => 0,
-			'hiddenAnalytics' => 0,
-			'hiddenNonBlocking' => 0,
-			'shown' => 0,
-			'presetMatched' => 0,
-			'alreadyInRules' => 0,
-		];
-
-		$existingNormalized = [];
-		foreach ($existingPublicParts as $part) {
-			$part = trim((string)$part);
-			if ($part !== '') {
-				$existingNormalized[] = mb_strtolower($part);
-			}
-		}
-
-		$scripts = [];
-		$seenPublic = [];
-
-		foreach ($parsed as $item) {
-			$src = $item['src'];
-			$hasAsyncDefer = $item['nonBlocking'];
-
-			if ($hasAsyncDefer) {
-				$stats['hiddenNonBlocking']++;
-				continue;
-			}
-
-			$hide = ScriptScanCatalog::matchHide($src);
-			if ($hide !== null) {
-				if ($hide['reason'] === 'core') {
-					$stats['hiddenCore']++;
-				} else {
-					$stats['hiddenAnalytics']++;
-				}
-				continue;
-			}
-
-			$preset = ScriptScanCatalog::matchPreset($src);
-			$publicPart = $preset['publicPart'] ?? self::suggestPublicPart($src);
-
-			$publicKey = mb_strtolower($publicPart);
-			if (isset($seenPublic[$publicKey])) {
-				continue;
-			}
-			$seenPublic[$publicKey] = true;
-
-			$already = false;
-			foreach ($existingNormalized as $existing) {
-				if ($existing === $publicKey || str_contains($src, $existing) || str_contains($existing, $publicKey)) {
-					$already = true;
-					break;
-				}
-			}
-
-			if ($already) {
-				$stats['alreadyInRules']++;
-			}
-
-			$row = [
-				'src' => $src,
-				'publicPart' => $publicPart,
-				'preset' => $preset,
-				'alreadyInRules' => $already,
-				'autoAdd' => $preset !== null && !$already,
-				'attribute' => $preset['attribute'] ?? 'defer',
-			];
-
-			if ($preset !== null) {
-				$stats['presetMatched']++;
-			}
-
-			$scripts[] = $row;
-			$stats['shown']++;
-		}
-
-		usort($scripts, static function ($a, $b) {
-			$ap = $a['preset'] !== null ? 0 : 1;
-			$bp = $b['preset'] !== null ? 0 : 1;
-			if ($ap !== $bp) {
-				return $ap - $bp;
-			}
-			return strcmp($a['publicPart'], $b['publicPart']);
-		});
 
 		return [
 			'ok' => true,
 			'error' => null,
-			'stats' => $stats,
-			'scripts' => $scripts,
+			'parsed' => self::extractScripts($body, $finalUrl),
 		];
+	}
+
+	/**
+	 * @param array{src: string, nonBlocking: bool} $item
+	 * @param array<string, int> $stats
+	 * @param list<array<string, mixed>> $scripts
+	 * @param array<string, true> $seenPublic
+	 * @param list<string> $existingNormalized
+	 */
+	private static function classifyInto(
+		array $item,
+		array &$stats,
+		array &$scripts,
+		array &$seenPublic,
+		array $existingNormalized
+	): void {
+		$src = $item['src'];
+
+		if ($item['nonBlocking']) {
+			$stats['hiddenNonBlocking']++;
+			return;
+		}
+
+		$hide = ScriptScanCatalog::matchHide($src);
+		if ($hide !== null) {
+			if ($hide['reason'] === 'core') {
+				$stats['hiddenCore']++;
+			} else {
+				$stats['hiddenAnalytics']++;
+			}
+			return;
+		}
+
+		$preset = ScriptScanCatalog::matchPreset($src);
+		$publicPart = $preset['publicPart'] ?? self::suggestPublicPart($src);
+		$publicKey = mb_strtolower($publicPart);
+
+		if (isset($seenPublic[$publicKey])) {
+			return;
+		}
+		$seenPublic[$publicKey] = true;
+
+		$already = false;
+		foreach ($existingNormalized as $existing) {
+			if ($existing === $publicKey || str_contains($src, $existing) || str_contains($existing, $publicKey)) {
+				$already = true;
+				break;
+			}
+		}
+
+		if ($already) {
+			$stats['alreadyInRules']++;
+		}
+
+		if ($preset !== null) {
+			$stats['presetMatched']++;
+		}
+
+		$scripts[] = [
+			'src' => $src,
+			'publicPart' => $publicPart,
+			'preset' => $preset,
+			'alreadyInRules' => $already,
+			'autoAdd' => $preset !== null && !$already,
+			'attribute' => $preset['attribute'] ?? 'defer',
+		];
+		$stats['shown']++;
 	}
 
 	/**
@@ -246,11 +362,9 @@ class PageScriptScanner
 		$host = (string)($parts['host'] ?? '');
 
 		if ($path !== '' && str_starts_with($path, '/')) {
-			// Локальные и относительные пути — без query (уже срезан)
 			if ($host === '' || self::isLikelySameSitePath($path)) {
 				return mb_substr($path, 0, 160);
 			}
-			// Внешний: distinctive host + короткий хвост файла
 			$file = basename($path);
 			if ($file !== '' && $file !== '/') {
 				return mb_substr($host . '/' . $file, 0, 160);
@@ -295,24 +409,32 @@ class PageScriptScanner
 		return $base->getScheme() . '://' . $base->getHost() . $portPart . $dir . $src;
 	}
 
+	/** @return array<string, int> */
+	private static function emptyStats(): array
+	{
+		return [
+			'found' => 0,
+			'hiddenCore' => 0,
+			'hiddenAnalytics' => 0,
+			'hiddenNonBlocking' => 0,
+			'shown' => 0,
+			'presetMatched' => 0,
+			'alreadyInRules' => 0,
+		];
+	}
+
 	/**
-	 * @return array{ok: bool, error: string, stats: array<string, int>, scripts: array}
+	 * @return array{ok: bool, error: string, stats: array<string, int>, scripts: array, scannedUrls: array, failedUrls: array}
 	 */
 	private static function fail(string $message): array
 	{
 		return [
 			'ok' => false,
 			'error' => $message,
-			'stats' => [
-				'found' => 0,
-				'hiddenCore' => 0,
-				'hiddenAnalytics' => 0,
-				'hiddenNonBlocking' => 0,
-				'shown' => 0,
-				'presetMatched' => 0,
-				'alreadyInRules' => 0,
-			],
+			'stats' => self::emptyStats(),
 			'scripts' => [],
+			'scannedUrls' => [],
+			'failedUrls' => [],
 		];
 	}
 }
