@@ -19,7 +19,7 @@
 
 Это дополнение поверх шаблона, не замена нормальной оптимизации. После установки всё выключено — работает только после включения опций и «Применить».
 
-Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.1.0`).
+Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.2.0`).
 
 ## Структура
 
@@ -33,11 +33,13 @@
 | `lib/OptionActions.php` | Действия опций + реестр `OPTION_ACTION` |
 | `lib/ScriptDeferral.php` | Очередь отложенных скриптов, stubs, runtime |
 | `lib/DeferredPresets.php` | Определения пресетов E + ensure в БД |
+| `lib/ScriptScanCatalog.php` | Реестр сканера: hide (ядро/аналитика) + presets (Jivo и др.) |
+| `lib/PageScriptScanner.php` | HTTP-скан страницы, разбор `<script src>`, классификация |
 | `lib/GPSOptions.php` | ORM опций |
 | `lib/ConnectedCssStyle.php` | ORM правил `<link>` (preload и т.п.) |
 | `lib/ConnectedJsScript.php` | ORM правил `<script>` (async/defer) |
 | `include.php` | Автозагрузка классов |
-| `admin/tools.googlepagespeed_options.php` | Админка: вкладки Опции / Тэг link / Тэг script |
+| `admin/tools.googlepagespeed_options.php` | Админка: вкладки Опции / Тэг link / Тэг script (+ AJAX скан) |
 | `admin/menu.php` | Пункт меню в «Настройки» |
 | `install/` | Установка / удаление, копия admin-скрипта |
 
@@ -56,6 +58,7 @@
 - Робот PageSpeed: UA содержит `"Lighthouse"` (`RobotDetector::isPageSpeedRobot`). Область «только для робота» — осознанный компромисс, не включать «на всякий случай».
 - Открывающие теги PHP — только `<?php` (короткие `<?` убраны).
 - **Пресеты отложенной загрузки (вариант E, v1.1.0):** `ScriptDeferral` + опции `deferYandexMetrika` / `deferGoogleAnalytics` (`deferJivoChat` — закомментирован). Stub (ym/gtag) + runtime перед `</body>`: idle или первое взаимодействие. Строки в БД: `DeferredPresets::ensureOptions()` при открытии админки. Не путать с опциями «Вырезать…». Подробная карта вариантов A–F — раздел ниже «Отложенная загрузка (варианты)».
+- **Скан скриптов страницы (v1.2.0):** вкладка «Тэг script» — HTTP GET публичного URL → список `<script src>`. Реестр в `ScriptScanCatalog`: **hide** (ядро `/bitrix/…`, Метрика/GA/GTM — не показывать; ими занимаются опции «Отложить») и **presets** (Jivo, Calltouch, VK, Facebook, TikTok, Roistat — цвет + `async`/`defer` + автодобавление в форму). Не-пресеты — только ручная кнопка «Добавить». Уже с `async`/`defer` скрываются. Счётчик: найдено / скрыто ядро / аналитика / non-blocking / пресеты / уже в правилах. Постоянное «облако проекта» не делаем.
 
 ## Отложенная загрузка (варианты)
 
@@ -137,6 +140,8 @@
 12. Превью / dry-run — «что изменится в HTML» без включения на всех.
 13. Свои regexp-правила вырезания в UI (сейчас только зашитые при установке).
 14. В селекте `as` добавить **`document`** (уже в примерах prefetch).
+15. ~~Скан / discovery скриптов~~ — сделано (v1.2.0): HTTP-скан + каталог hide/presets.
+16. Тот же сканер для вкладки **link** (stylesheet/font → preload).
 
 Рекомендуемый следующий шаг при старте работ: пункты **1–4**.
 

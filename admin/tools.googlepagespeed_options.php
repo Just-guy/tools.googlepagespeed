@@ -31,6 +31,31 @@ Loader::includeModule($module_id);
 // Пресеты отложенной загрузки для уже установленных модулей
 Tools\GooglePageSpeed\DeferredPresets::ensureOptions();
 
+// AJAX: скан скриптов публичной страницы
+if (
+	$request->isPost()
+	&& (string)$request->getPost('action') === 'gps_scan_scripts'
+	&& check_bitrix_sessid()
+) {
+	global $APPLICATION;
+
+	$APPLICATION->RestartBuffer();
+	header('Content-Type: application/json; charset=UTF-8');
+
+	$existing = $request->getPost('existing');
+	if (!is_array($existing)) {
+		$existing = [];
+	}
+
+	$result = Tools\GooglePageSpeed\PageScriptScanner::scan(
+		(string)$request->getPost('page_url'),
+		array_map('strval', $existing)
+	);
+
+	echo \Bitrix\Main\Web\Json::encode($result);
+	die();
+}
+
 $aTabs = [
 	[
 		"DIV"   => "edit1",
@@ -479,66 +504,98 @@ elseif ($DB->GetErrorMessage() != "")
 	</tr>
 
 	<?php $tabControl->BeginNextTab(); ?>
-	<?php if (empty($arrayLinkJsScripts)) :
-		$randomId = random_int(1, 999); ?>
-		<tr class="tools-gps-filed" data-container="link-js" data-id="1" data-key="0">
-			<td class="tools-gps-filed__number">1.</td>
-			<td class="tools-gps-filed__active">
-				<input type="checkbox" name="CONNECTED_JS_SCRIPT[0][ACTIVE]" value="Y" size="60" id="designed_checkbox_<?= $randomId ?>" class="adm-designed-checkbox">
-				<label class="adm-designed-checkbox-label" for="designed_checkbox_<?= $randomId ?>" title=""></label>
-			</td>
-			<td class="tools-gps-filed__value">
-				<input type="hidden" name="CONNECTED_JS_SCRIPT[0][ID]" value="1" size="60">
-			</td>
-			<td class="tools-gps-filed__value">
-				<select name="CONNECTED_JS_SCRIPT[0][ATTRIBUTE]">
-					<?php foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
-						<option value="<?= $valueAttribute ?>"><?= $valueAttribute ?></option>
-					<?php } ?>
-				</select>
-			</td>
-			<td class="tools-gps-filed__text">
-				src=
-			</td>
-			<td class="tools-gps-filed__value">
-				<input type="text" name="CONNECTED_JS_SCRIPT[0][STRING_PUBLIC_PART]" value="" size="60">
-			</td>
-		</tr>
-	<?php else : ?>
-		<?php foreach ($arrayLinkJsScripts as $keyLinkJs => $valueLinkJs) {
-			$randomId = random_int(1, 999); ?>
-			<tr class="tools-gps-filed" data-container="link-js" data-id="<?= $valueLinkJs['ID'] ?>" data-key="<?= $keyLinkJs ?>">
-				<td class="tools-gps-filed__number"><?= (int)$keyLinkJs + 1 ?>.</td>
-				<td class="tools-gps-filed__active">
-					<input type="checkbox" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ACTIVE]" value="Y" size="60" id="designed_checkbox_<?= $randomId ?>" class="adm-designed-checkbox" <?php if (!empty($valueLinkJs['ACTIVE']) && $valueLinkJs['ACTIVE'] == 'Y') echo 'checked' ?>>
-					<label class="adm-designed-checkbox-label" for="designed_checkbox_<?= $randomId ?>" title=""></label>
-				</td>
-				<td class="tools-gps-filed__value">
-					<input type="hidden" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ID]" value="<?= $valueLinkJs['ID'] ?>" size="60">
-				</td>
-				<td class="tools-gps-filed__value">
-					<select name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ATTRIBUTE]">
-						<?php foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
-							<option value="<?= $valueAttribute ?>" <?php if ($valueLinkJs["ATTRIBUTE"] == $valueAttribute) echo 'selected' ?>><?= $valueAttribute ?></option>
-						<?php } ?>
-					</select>
-				</td>
-				<td class="tools-gps-filed__text">
-					src=
-				</td>
-				<td class="tools-gps-filed__value">
-					<input type="text" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][STRING_PUBLIC_PART]" value="<?= $valueLinkJs['STRING_PUBLIC_PART'] ?>" size="60">
-				</td>
-				<td class="tools-gps-filed__delete">
-					<input type="button" class="tools-gps-filed__delete-field adm-btn-delete" value="x">
-				</td>
-			</tr>
-		<?php } ?>
-	<?php endif; ?>
 
-	<tr>
+	<tr class="tools-gps-script-layout-row">
 		<td colspan="10">
-			<input type="button" class="tools-gps-filed__add tools-gps-btn adm-btn-save" data-container-button="link-js" value="Добавить url">
+			<div class="tools-gps-script-layout">
+				<div class="tools-gps-script-layout__col tools-gps-script-layout__col--scan">
+					<div class="tools-gps-scan" id="tools-gps-script-scan">
+						<div class="tools-gps-scan__head">
+							<div class="tools-gps-scan__title">Сканирование страницы</div>
+							<div class="tools-gps-scan__subtitle">HTTP-запрос публичной страницы → список &lt;script src&gt; без ядра Bitrix и без Метрики/GA. Скрипты из пресетов добавляются в правила автоматически.</div>
+						</div>
+						<div class="tools-gps-scan__form">
+							<input type="url" class="tools-gps-scan__url" id="tools-gps-scan-url" placeholder="https://example.com/" value="/" size="60">
+							<input type="button" class="tools-gps-btn adm-btn-save" id="tools-gps-scan-run" value="Сканировать">
+						</div>
+						<div class="tools-gps-scan__stats" id="tools-gps-scan-stats" hidden></div>
+						<div class="tools-gps-scan__error" id="tools-gps-scan-error" hidden></div>
+						<div class="tools-gps-scan__list" id="tools-gps-scan-list"></div>
+					</div>
+				</div>
+
+				<div class="tools-gps-script-layout__col tools-gps-script-layout__col--rules">
+					<div class="tools-gps-js-rules">
+						<div class="tools-gps-js-rules__head">
+							<div class="tools-gps-js-rules__title">Правила async / defer</div>
+							<div class="tools-gps-js-rules__subtitle">Список скриптов, которым модуль назначит атрибут на публичных страницах.</div>
+						</div>
+						<table class="tools-gps-js-rules__table">
+							<tbody id="tools-gps-js-rules-body">
+							<?php if (empty($arrayLinkJsScripts)) :
+								$randomId = random_int(1, 999); ?>
+								<tr class="tools-gps-filed" data-container="link-js" data-id="1" data-key="0">
+									<td class="tools-gps-filed__number">1.</td>
+									<td class="tools-gps-filed__active">
+										<input type="checkbox" name="CONNECTED_JS_SCRIPT[0][ACTIVE]" value="Y" size="60" id="designed_checkbox_<?= $randomId ?>" class="adm-designed-checkbox">
+										<label class="adm-designed-checkbox-label" for="designed_checkbox_<?= $randomId ?>" title=""></label>
+									</td>
+									<td class="tools-gps-filed__value">
+										<input type="hidden" name="CONNECTED_JS_SCRIPT[0][ID]" value="1" size="60">
+									</td>
+									<td class="tools-gps-filed__value">
+										<select name="CONNECTED_JS_SCRIPT[0][ATTRIBUTE]">
+											<?php foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
+												<option value="<?= $valueAttribute ?>"><?= $valueAttribute ?></option>
+											<?php } ?>
+										</select>
+									</td>
+									<td class="tools-gps-filed__text">
+										src=
+									</td>
+									<td class="tools-gps-filed__value tools-gps-filed__value--src">
+										<input type="text" name="CONNECTED_JS_SCRIPT[0][STRING_PUBLIC_PART]" value="" size="40">
+									</td>
+								</tr>
+							<?php else : ?>
+								<?php foreach ($arrayLinkJsScripts as $keyLinkJs => $valueLinkJs) {
+									$randomId = random_int(1, 999); ?>
+									<tr class="tools-gps-filed" data-container="link-js" data-id="<?= $valueLinkJs['ID'] ?>" data-key="<?= $keyLinkJs ?>">
+										<td class="tools-gps-filed__number"><?= (int)$keyLinkJs + 1 ?>.</td>
+										<td class="tools-gps-filed__active">
+											<input type="checkbox" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ACTIVE]" value="Y" size="60" id="designed_checkbox_<?= $randomId ?>" class="adm-designed-checkbox" <?php if (!empty($valueLinkJs['ACTIVE']) && $valueLinkJs['ACTIVE'] == 'Y') echo 'checked' ?>>
+											<label class="adm-designed-checkbox-label" for="designed_checkbox_<?= $randomId ?>" title=""></label>
+										</td>
+										<td class="tools-gps-filed__value">
+											<input type="hidden" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ID]" value="<?= $valueLinkJs['ID'] ?>" size="60">
+										</td>
+										<td class="tools-gps-filed__value">
+											<select name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][ATTRIBUTE]">
+												<?php foreach ($attributeLinkJsScripts as $keyAttribute => $valueAttribute) { ?>
+													<option value="<?= $valueAttribute ?>" <?php if ($valueLinkJs["ATTRIBUTE"] == $valueAttribute) echo 'selected' ?>><?= $valueAttribute ?></option>
+												<?php } ?>
+											</select>
+										</td>
+										<td class="tools-gps-filed__text">
+											src=
+										</td>
+										<td class="tools-gps-filed__value tools-gps-filed__value--src">
+											<input type="text" name="CONNECTED_JS_SCRIPT[<?= $keyLinkJs ?>][STRING_PUBLIC_PART]" value="<?= $valueLinkJs['STRING_PUBLIC_PART'] ?>" size="40">
+										</td>
+										<td class="tools-gps-filed__delete">
+											<input type="button" class="tools-gps-filed__delete-field adm-btn-delete" value="x">
+										</td>
+									</tr>
+								<?php } ?>
+							<?php endif; ?>
+							</tbody>
+						</table>
+						<div class="tools-gps-js-rules__actions">
+							<input type="button" class="tools-gps-filed__add tools-gps-btn adm-btn-save" data-container-button="link-js" value="Добавить url">
+						</div>
+					</div>
+				</div>
+			</div>
 		</td>
 	</tr>
 
@@ -636,7 +693,271 @@ elseif ($DB->GetErrorMessage() != "")
 		templateField = '',
 		roleLinkCssStyles = <?= \Bitrix\Main\Web\Json::encode($roleLinkCssStyles); ?>,
 		typeLinkCssStyles = <?= \Bitrix\Main\Web\Json::encode($typeLinkCssStyles); ?>,
-		attributeLinkJsScripts = <?= \Bitrix\Main\Web\Json::encode($attributeLinkJsScripts); ?>;
+		attributeLinkJsScripts = <?= \Bitrix\Main\Web\Json::encode($attributeLinkJsScripts); ?>,
+		gpsScanSessid = <?= \Bitrix\Main\Web\Json::encode(bitrix_sessid()); ?>;
+
+	(function initScanUrlDefault() {
+		let input = document.getElementById('tools-gps-scan-url');
+		if (input && (!input.value || input.value === '/')) {
+			input.value = window.location.origin + '/';
+		}
+	})();
+
+	function gpsCollectExistingJsParts() {
+		let parts = [];
+		document.querySelectorAll('[data-container="link-js"] input[name*="[STRING_PUBLIC_PART]"]').forEach((el) => {
+			let v = (el.value || '').trim();
+			if (v) {
+				parts.push(v);
+			}
+		});
+		return parts;
+	}
+
+	function gpsIsJsPartAlreadyInForm(publicPart) {
+		let needle = (publicPart || '').toLowerCase();
+		if (!needle) {
+			return false;
+		}
+		let found = false;
+		document.querySelectorAll('[data-container="link-js"] input[name*="[STRING_PUBLIC_PART]"]').forEach((el) => {
+			let v = (el.value || '').trim().toLowerCase();
+			if (v && (v === needle || v.indexOf(needle) !== -1 || needle.indexOf(v) !== -1)) {
+				found = true;
+			}
+		});
+		return found;
+	}
+
+	function gpsFillOrAddJsRule(publicPart, attribute) {
+		publicPart = (publicPart || '').trim();
+		attribute = attribute === 'async' ? 'async' : 'defer';
+		if (!publicPart || gpsIsJsPartAlreadyInForm(publicPart)) {
+			return false;
+		}
+
+		let rows = document.querySelectorAll('[data-container="link-js"]');
+		let emptyRow = null;
+		rows.forEach((row) => {
+			let input = row.querySelector('input[name*="[STRING_PUBLIC_PART]"]');
+			if (input && !(input.value || '').trim() && !emptyRow) {
+				emptyRow = row;
+			}
+		});
+
+		if (emptyRow) {
+			let input = emptyRow.querySelector('input[name*="[STRING_PUBLIC_PART]"]');
+			let select = emptyRow.querySelector('select[name*="[ATTRIBUTE]"]');
+			let checkbox = emptyRow.querySelector('input[type="checkbox"][name*="[ACTIVE]"]');
+			if (input) {
+				input.value = publicPart;
+			}
+			if (select) {
+				select.value = attribute;
+			}
+			if (checkbox) {
+				checkbox.checked = true;
+			}
+			return true;
+		}
+
+		let addBtn = document.querySelector('[data-container-button="link-js"]');
+		if (addBtn) {
+			addBtn.click();
+			rows = document.querySelectorAll('[data-container="link-js"]');
+			let last = rows[rows.length - 1];
+			if (last) {
+				let input = last.querySelector('input[name*="[STRING_PUBLIC_PART]"]');
+				let select = last.querySelector('select[name*="[ATTRIBUTE]"]');
+				let checkbox = last.querySelector('input[type="checkbox"][name*="[ACTIVE]"]');
+				if (input) {
+					input.value = publicPart;
+				}
+				if (select) {
+					select.value = attribute;
+				}
+				if (checkbox) {
+					checkbox.checked = true;
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function gpsEscapeHtml(str) {
+		return String(str)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;');
+	}
+
+	function gpsRenderScanResults(data) {
+		let statsEl = document.getElementById('tools-gps-scan-stats');
+		let listEl = document.getElementById('tools-gps-scan-list');
+		let errorEl = document.getElementById('tools-gps-scan-error');
+		if (!statsEl || !listEl || !errorEl) {
+			return;
+		}
+
+		errorEl.hidden = true;
+		errorEl.textContent = '';
+
+		let s = data.stats || {};
+		statsEl.hidden = false;
+		statsEl.innerHTML =
+			'Найдено: <strong>' + (s.found || 0) + '</strong>' +
+			' · в списке: <strong>' + (s.shown || 0) + '</strong>' +
+			' · скрыто ядро: <strong>' + (s.hiddenCore || 0) + '</strong>' +
+			' · скрыто аналитика: <strong>' + (s.hiddenAnalytics || 0) + '</strong>' +
+			' · уже async/defer: <strong>' + (s.hiddenNonBlocking || 0) + '</strong>' +
+			' · пресеты: <strong>' + (s.presetMatched || 0) + '</strong>' +
+			' · уже в правилах: <strong>' + (s.alreadyInRules || 0) + '</strong>';
+
+		listEl.innerHTML = '';
+		let scripts = data.scripts || [];
+		if (!scripts.length) {
+			listEl.innerHTML = '<div class="tools-gps-scan__empty">После фильтров подходящих скриптов нет.</div>';
+			return;
+		}
+
+		scripts.forEach((item) => {
+			let row = document.createElement('div');
+			row.className = 'tools-gps-scan__item';
+			if (item.preset) {
+				row.classList.add('tools-gps-scan__item--known');
+				row.style.setProperty('--gps-preset-color', item.preset.color || '#0ea5e9');
+			}
+			if (item.alreadyInRules) {
+				row.classList.add('tools-gps-scan__item--added');
+			}
+
+			let badge = '';
+			if (item.preset) {
+				badge = '<span class="tools-gps-scan__badge">' + gpsEscapeHtml(item.preset.label) + '</span>';
+			}
+
+			let status = item.alreadyInRules
+				? '<span class="tools-gps-scan__status">уже в правилах</span>'
+				: '';
+
+			let btnLabel = item.preset
+				? 'Добавить (' + gpsEscapeHtml(item.attribute || 'defer') + ')'
+				: 'Добавить';
+			let btnDisabled = item.alreadyInRules ? ' disabled' : '';
+
+			row.innerHTML =
+				'<div class="tools-gps-scan__item-main">' +
+					badge +
+					'<code class="tools-gps-scan__src" title="' + gpsEscapeHtml(item.src || '') + '">' + gpsEscapeHtml(item.publicPart || '') + '</code>' +
+					status +
+				'</div>' +
+				'<button type="button" class="tools-gps-scan__add-btn adm-btn"' + btnDisabled +
+					' data-public-part="' + gpsEscapeHtml(item.publicPart || '') + '"' +
+					' data-attribute="' + gpsEscapeHtml(item.attribute || 'defer') + '">' +
+					btnLabel +
+				'</button>';
+
+			listEl.appendChild(row);
+		});
+	}
+
+	document.getElementById('tools-gps-scan-run')?.addEventListener('click', () => {
+		let urlInput = document.getElementById('tools-gps-scan-url');
+		let errorEl = document.getElementById('tools-gps-scan-error');
+		let btn = document.getElementById('tools-gps-scan-run');
+		let pageUrl = (urlInput?.value || '').trim();
+		if (!pageUrl) {
+			if (errorEl) {
+				errorEl.hidden = false;
+				errorEl.textContent = 'Укажите URL страницы.';
+			}
+			return;
+		}
+
+		btn.disabled = true;
+		btn.value = 'Сканирование…';
+
+		let body = new FormData();
+		body.append('action', 'gps_scan_scripts');
+		body.append('sessid', gpsScanSessid);
+		body.append('page_url', pageUrl);
+		gpsCollectExistingJsParts().forEach((part) => {
+			body.append('existing[]', part);
+		});
+
+		fetch(window.location.href, {
+			method: 'POST',
+			body: body,
+			credentials: 'same-origin',
+		})
+			.then((r) => r.json())
+			.then((data) => {
+				if (!data || !data.ok) {
+					if (errorEl) {
+						errorEl.hidden = false;
+						errorEl.textContent = (data && data.error) ? data.error : 'Ошибка сканирования.';
+					}
+					document.getElementById('tools-gps-scan-stats').hidden = true;
+					document.getElementById('tools-gps-scan-list').innerHTML = '';
+					return;
+				}
+
+				gpsRenderScanResults(data);
+
+				(data.scripts || []).forEach((item) => {
+					if (item.autoAdd) {
+						gpsFillOrAddJsRule(item.publicPart, item.attribute);
+					}
+				});
+
+				// обновить статусы «уже в правилах» после автодобавления
+				gpsRenderScanResults({
+					ok: true,
+					stats: data.stats,
+					scripts: (data.scripts || []).map((item) => {
+						let copy = Object.assign({}, item);
+						if (gpsIsJsPartAlreadyInForm(copy.publicPart)) {
+							copy.alreadyInRules = true;
+							copy.autoAdd = false;
+						}
+						return copy;
+					}),
+				});
+			})
+			.catch(() => {
+				if (errorEl) {
+					errorEl.hidden = false;
+					errorEl.textContent = 'Сбой запроса к админке.';
+				}
+			})
+			.finally(() => {
+				btn.disabled = false;
+				btn.value = 'Сканировать';
+			});
+	});
+
+	document.getElementById('tools-gps-scan-list')?.addEventListener('click', (event) => {
+		let btn = event.target.closest('.tools-gps-scan__add-btn');
+		if (!btn || btn.disabled) {
+			return;
+		}
+		let publicPart = btn.getAttribute('data-public-part') || '';
+		let attribute = btn.getAttribute('data-attribute') || 'defer';
+		if (gpsFillOrAddJsRule(publicPart, attribute)) {
+			btn.disabled = true;
+			btn.textContent = 'Добавлено';
+			let item = btn.closest('.tools-gps-scan__item');
+			if (item) {
+				item.classList.add('tools-gps-scan__item--added');
+				let main = item.querySelector('.tools-gps-scan__item-main');
+				if (main && !main.querySelector('.tools-gps-scan__status')) {
+					main.insertAdjacentHTML('beforeend', '<span class="tools-gps-scan__status">уже в правилах</span>');
+				}
+			}
+		}
+	});
 
 	document.addEventListener('click', (event) => {
 		if (event.target.classList.contains('tools-gps-filed__add')) {
@@ -716,8 +1037,8 @@ elseif ($DB->GetErrorMessage() != "")
 						<td class="tools-gps-filed__text">
 							src=
 						</td>
-						<td class="tools-gps-filed__value">
-							<input type="text" name="CONNECTED_JS_SCRIPT[` + keyNextElement + `][STRING_PUBLIC_PART]" value="" size="60">
+						<td class="tools-gps-filed__value tools-gps-filed__value--src">
+							<input type="text" name="CONNECTED_JS_SCRIPT[` + keyNextElement + `][STRING_PUBLIC_PART]" value="" size="40">
 						</td>
 						<td class="tools-gps-filed__delete">
 							<input type="button" class="tools-gps-filed__delete-field adm-btn-delete" value="x">
@@ -733,6 +1054,220 @@ elseif ($DB->GetErrorMessage() != "")
 	})
 </script>
 <style>
+	.tools-gps-script-layout-row > td {
+		padding: 0 !important;
+		border: none !important;
+	}
+
+	.tools-gps-script-layout {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+		margin: 8px 0 12px;
+		align-items: stretch;
+	}
+
+	.tools-gps-script-layout__col {
+		min-width: 0;
+	}
+
+	.tools-gps-scan {
+		height: 100%;
+		margin: 0;
+		padding: 16px 18px 18px;
+		background: #fff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		box-sizing: border-box;
+	}
+
+	.tools-gps-js-rules {
+		height: 100%;
+		margin: 0;
+		padding: 16px 18px 18px;
+		background: #fff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		box-sizing: border-box;
+	}
+
+	.tools-gps-js-rules__title {
+		font-size: 15px;
+		font-weight: 600;
+		color: #1e293b;
+		margin-bottom: 4px;
+	}
+
+	.tools-gps-js-rules__subtitle {
+		font-size: 12px;
+		color: #64748b;
+		margin-bottom: 12px;
+		line-height: 1.45;
+	}
+
+	.tools-gps-js-rules__table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	.tools-gps-js-rules__table .tools-gps-filed {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		width: 100%;
+		margin-bottom: 8px;
+		padding: 6px 0;
+		border-bottom: 1px solid #f1f5f9;
+	}
+
+	.tools-gps-js-rules__table .tools-gps-filed > td {
+		margin-right: 8px;
+		padding: 0;
+		border: none;
+		background: transparent;
+	}
+
+	.tools-gps-js-rules__table .tools-gps-filed__value--src {
+		flex: 1 1 140px;
+		min-width: 0;
+	}
+
+	.tools-gps-js-rules__table .tools-gps-filed__value--src input[type="text"] {
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	.tools-gps-js-rules__actions {
+		margin-top: 10px;
+	}
+
+	.tools-gps-scan__title {
+		font-size: 15px;
+		font-weight: 600;
+		color: #1e293b;
+		margin-bottom: 4px;
+	}
+
+	.tools-gps-scan__subtitle {
+		font-size: 12px;
+		color: #64748b;
+		margin-bottom: 12px;
+		line-height: 1.45;
+	}
+
+	.tools-gps-scan__form {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		align-items: center;
+		margin-bottom: 10px;
+	}
+
+	.tools-gps-scan__url {
+		flex: 1 1 160px;
+		min-width: 120px;
+		max-width: 100%;
+		height: 30px;
+		padding: 0 10px;
+		border: 1px solid #c6cdd3;
+		border-radius: 4px;
+		box-sizing: border-box;
+	}
+
+	.tools-gps-scan__stats {
+		font-size: 12px;
+		color: #475569;
+		margin-bottom: 10px;
+		line-height: 1.5;
+	}
+
+	.tools-gps-scan__error {
+		font-size: 12px;
+		color: #b91c1c;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 4px;
+		padding: 8px 10px;
+		margin-bottom: 10px;
+	}
+
+	.tools-gps-scan__list {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		max-height: 360px;
+		overflow: auto;
+	}
+
+	.tools-gps-scan__empty {
+		font-size: 12px;
+		color: #64748b;
+		padding: 6px 0;
+	}
+
+	.tools-gps-scan__item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 8px 10px;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 6px;
+		border-left: 3px solid #cbd5e1;
+	}
+
+	.tools-gps-scan__item--known {
+		border-left-color: var(--gps-preset-color, #0ea5e9);
+		background: color-mix(in srgb, var(--gps-preset-color, #0ea5e9) 8%, #fff);
+	}
+
+	.tools-gps-scan__item--added {
+		opacity: 0.72;
+	}
+
+	.tools-gps-scan__item-main {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.tools-gps-scan__badge {
+		display: inline-block;
+		padding: 2px 8px;
+		border-radius: 999px;
+		font-size: 11px;
+		font-weight: 600;
+		color: #fff;
+		background: var(--gps-preset-color, #0ea5e9);
+		white-space: nowrap;
+	}
+
+	.tools-gps-scan__src {
+		font-size: 12px;
+		color: #0f172a;
+		word-break: break-all;
+		background: transparent;
+	}
+
+	.tools-gps-scan__status {
+		font-size: 11px;
+		color: #64748b;
+	}
+
+	.tools-gps-scan__add-btn {
+		flex-shrink: 0;
+	}
+
+	@media (max-width: 1100px) {
+		.tools-gps-script-layout {
+			grid-template-columns: 1fr;
+		}
+	}
+
 	.tools-gps-filed {
 		display: flex;
 		align-items: center;
