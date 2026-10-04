@@ -102,20 +102,80 @@ class OptionActions
 			'/<link\b[^>]*>/i',
 			static function ($match) {
 				$tag = $match[0];
-				if (!preg_match('/\brel\s*=\s*(["\']?)stylesheet\1/i', $tag)) {
-					return $tag;
-				}
-				if (preg_match('/\bmedia\s*=\s*(["\']?)print\1/i', $tag)) {
+				if (!self::linkRelIsBlockingStylesheet($tag)) {
 					return $tag;
 				}
 
-				$deferred = preg_replace('/\smedia\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $tag);
-				$deferred = preg_replace('/\s*\/?>$/', ' media="print" onload="this.media=\'all\'"$0', $deferred);
+				$media = self::linkAttribute($tag, 'media');
+				if ($media !== null && strcasecmp(trim($media), 'print') === 0) {
+					return $tag;
+				}
+				if (self::linkAttribute($tag, 'onload') !== null) {
+					return $tag;
+				}
+
+				$applyMedia = 'all';
+				if ($media !== null && trim($media) !== '' && !preg_match('/^(all|screen)$/i', trim($media))) {
+					$applyMedia = trim($media);
+				}
+				$applyMedia = str_replace(['\\', "'"], ['\\\\', "\\'"], $applyMedia);
+
+				$deferred = preg_replace(
+					'/(?:^|\s)media\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s"\'=<>`]+)/i',
+					'',
+					$tag
+				);
+				$deferred = preg_replace(
+					'/\s*\/?>$/',
+					' media="print" onload="this.media=\'' . $applyMedia . '\'"$0',
+					$deferred,
+					1
+				);
 
 				return $deferred . '<noscript>' . $tag . '</noscript>';
 			},
 			$content
 		);
+	}
+
+	/**
+	 * rel именно stylesheet и без alternate. Не путать с this.rel внутри onload.
+	 */
+	private static function linkRelIsBlockingStylesheet(string $tag): bool
+	{
+		$rel = self::linkAttribute($tag, 'rel');
+		if ($rel === null || trim($rel) === '') {
+			return false;
+		}
+
+		$tokens = preg_split('/\s+/', strtolower(trim($rel)));
+		return in_array('stylesheet', $tokens, true) && !in_array('alternate', $tokens, true);
+	}
+
+	/**
+	 * Значение атрибута тега link. Имя должно быть отдельным атрибутом, не суффиксом (this.rel, data-rel).
+	 */
+	private static function linkAttribute(string $tag, string $name): ?string
+	{
+		if (!preg_match(
+			'/(?:^|\s)' . preg_quote($name, '/') . '\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s"\'=<>`]+))/i',
+			$tag,
+			$m
+		)) {
+			return null;
+		}
+
+		if ($m[1] !== '') {
+			return $m[1];
+		}
+		if ($m[2] !== '') {
+			return $m[2];
+		}
+		if (($m[3] ?? '') !== '') {
+			return $m[3];
+		}
+
+		return '';
 	}
 
 	public static function eliminateScriptsThatBlockDisplay(&$content)
