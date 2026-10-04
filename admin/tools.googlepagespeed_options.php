@@ -97,6 +97,10 @@ if ($request["Update"] && check_bitrix_sessid()) {
 		if (!isset($arrayOptions[$keyOption])) {
 			continue;
 		}
+		$codeOption = (string)($arrayOptions[$keyOption]['CODE_OPTION'] ?? '');
+		if (in_array($codeOption, ['YANDEX_METRIKA', 'GOOGLE_ANALYTICS', 'GOOGLE_TAG_MANAGER'], true)) {
+			continue;
+		}
 		if (($arrayOptions[$keyOption]['OPTION_TYPE'] ?? '') === 'heading') {
 			continue;
 		}
@@ -256,56 +260,16 @@ elseif ($DB->GetErrorMessage() != "")
 		}
 	}
 	$scriptChildCodes = ['ELIMINATE_SCRIPTS_GENERAL_JS', 'ELIMINATE_SCRIPTS_ASPRO_JS'];
-	foreach ($arrayOptions as $keyOption => $valueOption) {
-		$code = (string)($valueOption['CODE_OPTION'] ?? '');
-		if (in_array($code, $scriptChildCodes, true)) {
-			continue;
-		}
+	$hiddenOptionCodes = ['YANDEX_METRIKA', 'GOOGLE_ANALYTICS', 'GOOGLE_TAG_MANAGER'];
 
-		$optionType = (string)($valueOption['OPTION_TYPE'] ?? '');
-		if ($optionType === 'heading') {
-			?>
-			<tr class="tools-gps-filed tools-gps-filed--heading">
-				<td class="tools-gps-filed__active"></td>
-				<td class="tools-gps-filed__name" colspan="2">
-					<strong><?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?></strong>
-				</td>
-			</tr>
-			<?php
-			if ($code === 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY') {
-				foreach ($scriptChildCodes as $childCode) {
-					if (!isset($optionsByCode[$childCode])) {
-						continue;
-					}
-					$childKey = $optionsByCode[$childCode]['key'];
-					$child = $optionsByCode[$childCode]['row'];
-					?>
-					<tr class="tools-gps-filed tools-gps-filed--nested">
-						<td class="tools-gps-filed__active">
-							<input type="checkbox" name="OPTIONS[<?= $childKey ?>][ACTIVE]" value="Y" size="60" <?php if (!empty($child['ACTIVE']) && $child['ACTIVE'] == 'Y') echo 'checked' ?>>
-							<input type="hidden" name="OPTIONS[<?= $childKey ?>][CODE_OPTION]" value="<?= htmlspecialcharsbx($childCode) ?>" size="60">
-						</td>
-						<td class="tools-gps-filed__name">
-							<?= htmlspecialcharsbx($child['NAME_OPTION']) ?>
-						</td>
-						<td class="tools-gps-filed__value">
-							<select name="OPTIONS[<?= $childKey ?>][LIMITATION]">
-								<?php foreach ($limitation as $keyLimitation => $valueLimitation) { ?>
-									<option value="<?= $keyLimitation ?>" <?php if ($child['LIMITATION'] == $keyLimitation) echo 'selected' ?>><?= $valueLimitation ?></option>
-								<?php } ?>
-							</select>
-						</td>
-					</tr>
-					<?php
-				}
-			}
-			continue;
-		}
+	$renderGpsOptionRow = static function (int|string $keyOption, array $valueOption, array $limitation, bool $nested = false): void {
+		$code = (string)($valueOption['CODE_OPTION'] ?? '');
+		$rowClass = 'tools-gps-filed' . ($nested ? ' tools-gps-filed--nested' : '');
 		?>
-		<tr class="tools-gps-filed">
+		<tr class="<?= $rowClass ?>">
 			<td class="tools-gps-filed__active">
 				<input type="checkbox" name="OPTIONS[<?= $keyOption ?>][ACTIVE]" value="Y" size="60" <?php if (!empty($valueOption['ACTIVE']) && $valueOption['ACTIVE'] == 'Y') echo 'checked' ?>>
-				<input type="hidden" name="OPTIONS[<?= $keyOption ?>][CODE_OPTION]" value="GOOGLE_PS_OPTION" size="60">
+				<input type="hidden" name="OPTIONS[<?= $keyOption ?>][CODE_OPTION]" value="<?= htmlspecialcharsbx($code !== '' ? $code : 'GOOGLE_PS_OPTION') ?>" size="60">
 			</td>
 			<td class="tools-gps-filed__name">
 				<?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?>
@@ -318,7 +282,81 @@ elseif ($DB->GetErrorMessage() != "")
 				</select>
 			</td>
 		</tr>
-	<?php } ?>
+		<?php
+	};
+
+	$mainOptionKeys = [];
+	$deferOptionKeys = [];
+	foreach ($arrayOptions as $keyOption => $valueOption) {
+		$code = (string)($valueOption['CODE_OPTION'] ?? '');
+		if (in_array($code, $scriptChildCodes, true) || in_array($code, $hiddenOptionCodes, true)) {
+			continue;
+		}
+		if (str_starts_with($code, 'DEFER_')) {
+			$deferOptionKeys[] = $keyOption;
+		} else {
+			$mainOptionKeys[] = $keyOption;
+		}
+	}
+	?>
+	<tr class="tools-gps-options-layout-row">
+		<td colspan="10">
+			<div class="tools-gps-options-layout">
+				<div class="tools-gps-options-layout__col">
+					<div class="tools-gps-options-panel">
+						<div class="tools-gps-options-panel__title">Опции</div>
+						<table class="tools-gps-options-panel__table">
+							<?php
+							foreach ($mainOptionKeys as $keyOption) {
+								$valueOption = $arrayOptions[$keyOption];
+								$code = (string)($valueOption['CODE_OPTION'] ?? '');
+								$optionType = (string)($valueOption['OPTION_TYPE'] ?? '');
+								if ($optionType === 'heading') {
+									?>
+									<tr class="tools-gps-filed tools-gps-filed--heading">
+										<td class="tools-gps-filed__active"></td>
+										<td class="tools-gps-filed__name" colspan="2">
+											<strong><?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?></strong>
+										</td>
+									</tr>
+									<?php
+									if ($code === 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY') {
+										foreach ($scriptChildCodes as $childCode) {
+											if (!isset($optionsByCode[$childCode])) {
+												continue;
+											}
+											$renderGpsOptionRow(
+												$optionsByCode[$childCode]['key'],
+												$optionsByCode[$childCode]['row'],
+												$limitation,
+												true
+											);
+										}
+									}
+									continue;
+								}
+								$renderGpsOptionRow($keyOption, $valueOption, $limitation);
+							}
+							?>
+						</table>
+					</div>
+				</div>
+				<div class="tools-gps-options-layout__col">
+					<div class="tools-gps-options-panel">
+						<div class="tools-gps-options-panel__title">Отложить скрипты</div>
+						<div class="tools-gps-options-panel__subtitle">Idle или первое взаимодействие — что раньше. Не путать с «Вырезать…».</div>
+						<table class="tools-gps-options-panel__table">
+							<?php
+							foreach ($deferOptionKeys as $keyOption) {
+								$renderGpsOptionRow($keyOption, $arrayOptions[$keyOption], $limitation);
+							}
+							?>
+						</table>
+					</div>
+				</div>
+			</div>
+		</td>
+	</tr>
 
 	<?php $tabControl->BeginNextTab(); ?>
 
@@ -1198,6 +1236,63 @@ elseif ($DB->GetErrorMessage() != "")
 	.tools-gps-script-layout-row > td {
 		padding: 0 !important;
 		border: none !important;
+	}
+
+	.tools-gps-options-layout-row > td {
+		padding: 0 !important;
+		border: none !important;
+	}
+
+	.tools-gps-options-layout {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+		margin: 8px 0 12px;
+		align-items: start;
+	}
+
+	.tools-gps-options-layout__col {
+		min-width: 0;
+	}
+
+	.tools-gps-options-panel {
+		height: 100%;
+		margin: 0;
+		padding: 16px 18px 18px;
+		background: #fff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		box-sizing: border-box;
+	}
+
+	.tools-gps-options-panel__title {
+		font-size: 14px;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 6px;
+	}
+
+	.tools-gps-options-panel__subtitle {
+		font-size: 12px;
+		color: #64748b;
+		margin: 0 0 12px;
+		line-height: 1.4;
+	}
+
+	.tools-gps-options-panel__table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	.tools-gps-options-panel__table .tools-gps-filed__name {
+		flex-basis: auto;
+		min-width: 160px;
+	}
+
+	@media (max-width: 1100px) {
+		.tools-gps-options-layout {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.tools-gps-script-layout {

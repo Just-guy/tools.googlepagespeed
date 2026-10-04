@@ -62,37 +62,37 @@ class Tools_googlepagespeed extends CModule
 		$this->InstallEvents();
 
 		$options = [
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'YANDEX_METRIKA',
-				'NAME_OPTION' => 'Вырезать скрипты Яндекс метрики',
-				'OPTION_ACTION' => 'cutYandexMetrika',
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-gps-robot'
-			],
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'GOOGLE_ANALYTICS',
-				'NAME_OPTION' => 'Вырезать скрипты Google Analytics',
-				'OPTION_ACTION' => serialize([
-					"(<!-- Google tag \(gtag\.js\) -->\s?|\s?)<script\s?(async|'')\s?src=.*googletagmanager.*\/script>\s<script>\s?.*function gtag.*\/script>",
-				]),
-				'OPTION_TYPE' => 'regular-expression',
-				'LIMITATION' => 'for-gps-robot'
-			],
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'GOOGLE_TAG_MANAGER',
-				'NAME_OPTION' => 'Вырезать скрипты Google Tag Manager',
-				'OPTION_ACTION' => serialize([
-					"<!--\s?Google\s?Tag\s?Manager.*-->.*<!--\s?End\s?Google\s?Tag\s?Manager.*-->",
-					"<script\s?(async.*|'')\s?src=.*googletagmanager.*\/script>",
-					"<script>\s*\(function\s*\([^)]*\)\s*{[^}]*'gtm\.start'[^}]*}\s*\)[^<]*<\/script>",
-					"<noscript>\s*<iframe.*googletagmanager.*iframe>\s*<\/noscript>"
-				]),
-				'OPTION_TYPE' => 'regular-expression',
-				'LIMITATION' => 'for-gps-robot'
-			],
+			// [
+			// 	'ACTIVE' => 'N',
+			// 	'CODE_OPTION' => 'YANDEX_METRIKA',
+			// 	'NAME_OPTION' => 'Вырезать скрипты Яндекс метрики',
+			// 	'OPTION_ACTION' => 'cutYandexMetrika',
+			// 	'OPTION_TYPE' => 'function',
+			// 	'LIMITATION' => 'for-gps-robot'
+			// ],
+			// [
+			// 	'ACTIVE' => 'N',
+			// 	'CODE_OPTION' => 'GOOGLE_ANALYTICS',
+			// 	'NAME_OPTION' => 'Вырезать скрипты Google Analytics',
+			// 	'OPTION_ACTION' => serialize([
+			// 		"(<!-- Google tag \(gtag\.js\) -->\s?|\s?)<script\s?(async|'')\s?src=.*googletagmanager.*\/script>\s<script>\s?.*function gtag.*\/script>",
+			// 	]),
+			// 	'OPTION_TYPE' => 'regular-expression',
+			// 	'LIMITATION' => 'for-gps-robot'
+			// ],
+			// [
+			// 	'ACTIVE' => 'N',
+			// 	'CODE_OPTION' => 'GOOGLE_TAG_MANAGER',
+			// 	'NAME_OPTION' => 'Вырезать скрипты Google Tag Manager',
+			// 	'OPTION_ACTION' => serialize([
+			// 		"<!--\s?Google\s?Tag\s?Manager.*-->.*<!--\s?End\s?Google\s?Tag\s?Manager.*-->",
+			// 		"<script\s?(async.*|'')\s?src=.*googletagmanager.*\/script>",
+			// 		"<script>\s*\(function\s*\([^)]*\)\s*{[^}]*'gtm\.start'[^}]*}\s*\)[^<]*<\/script>",
+			// 		"<noscript>\s*<iframe.*googletagmanager.*iframe>\s*<\/noscript>"
+			// 	]),
+			// 	'OPTION_TYPE' => 'regular-expression',
+			// 	'LIMITATION' => 'for-gps-robot'
+			// ],
 			[
 				'ACTIVE' => 'N',
 				'CODE_OPTION' => 'ELIMINATE_STYLE_SHEETS_THAT_BLOCK_DISPLAY',

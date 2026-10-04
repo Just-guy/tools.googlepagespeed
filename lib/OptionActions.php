@@ -14,6 +14,11 @@ class OptionActions
 		'addDecodingAsyncAttributeAllTagsImg' => [self::class, 'addDecodingAsyncAttributeAllTagsImg'],
 		'deferYandexMetrika' => [ScriptDeferral::class, 'deferYandexMetrika'],
 		'deferGoogleAnalytics' => [ScriptDeferral::class, 'deferGoogleAnalytics'],
+		'deferGoogleTagManager' => [ScriptDeferral::class, 'deferGoogleTagManager'],
+		'deferRoistat' => [ScriptDeferral::class, 'deferRoistat'],
+		'deferEnvybox' => [ScriptDeferral::class, 'deferEnvybox'],
+		'deferCalltouch' => [ScriptDeferral::class, 'deferCalltouch'],
+		'deferCdnInputmask' => [ScriptDeferral::class, 'deferCdnInputmask'],
 		// 'deferJivoChat' => [ScriptDeferral::class, 'deferJivoChat'],
 	];
 
