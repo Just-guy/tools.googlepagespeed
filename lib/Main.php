@@ -55,6 +55,9 @@ class Main
 
 			if ($valueOption['OPTION_TYPE'] == 'function') {
 				$methodName = htmlspecialcharsback($valueOption['OPTION_ACTION']);
+				if ($methodName === '') {
+					continue;
+				}
 				OptionActions::run($methodName, $content);
 			}
 		}

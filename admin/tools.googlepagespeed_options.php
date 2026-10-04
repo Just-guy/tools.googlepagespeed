@@ -30,6 +30,7 @@ Loader::includeModule($module_id);
 
 // Опции img-атрибутов и пресеты отложенной загрузки для уже установленных модулей
 Tools\GooglePageSpeed\OptionActions::ensureImgAttributeOptions();
+Tools\GooglePageSpeed\OptionActions::ensureEliminateScriptsOption();
 Tools\GooglePageSpeed\DeferredPresets::ensureOptions();
 
 // AJAX: скан скриптов публичной страницы
@@ -92,6 +93,12 @@ $active = '';
 if ($request["Update"] && check_bitrix_sessid()) {
 	// === GPS options
 	foreach (($request['OPTIONS'] ?? []) as $keyOption => $valueOption) {
+		if (!isset($arrayOptions[$keyOption])) {
+			continue;
+		}
+		if (($arrayOptions[$keyOption]['OPTION_TYPE'] ?? '') === 'heading') {
+			continue;
+		}
 		if (empty($valueOption["ACTIVE"])) $valueOption["ACTIVE"] = "N";
 
 		if ($arrayOptions[$keyOption]["ACTIVE"] === $valueOption["ACTIVE"] && $arrayOptions[$keyOption]["LIMITATION"] === $valueOption["LIMITATION"]) continue;
@@ -239,19 +246,73 @@ elseif ($DB->GetErrorMessage() != "")
 
 	<?php $tabControl->BeginNextTab(); ?>
 	<?php $randomId = random_int(1, 999); ?>
-	<?php foreach ($arrayOptions as $keyOption => $valueOption) { ?>
+	<?php
+	$optionsByCode = [];
+	foreach ($arrayOptions as $keyOption => $valueOption) {
+		$code = (string)($valueOption['CODE_OPTION'] ?? '');
+		if ($code !== '') {
+			$optionsByCode[$code] = ['key' => $keyOption, 'row' => $valueOption];
+		}
+	}
+	$scriptChildCodes = ['ELIMINATE_SCRIPTS_GENERAL_JS', 'ELIMINATE_SCRIPTS_ASPRO_JS'];
+	foreach ($arrayOptions as $keyOption => $valueOption) {
+		$code = (string)($valueOption['CODE_OPTION'] ?? '');
+		if (in_array($code, $scriptChildCodes, true)) {
+			continue;
+		}
+
+		$optionType = (string)($valueOption['OPTION_TYPE'] ?? '');
+		if ($optionType === 'heading') {
+			?>
+			<tr class="tools-gps-filed tools-gps-filed--heading">
+				<td class="tools-gps-filed__active"></td>
+				<td class="tools-gps-filed__name" colspan="2">
+					<strong><?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?></strong>
+				</td>
+			</tr>
+			<?php
+			if ($code === 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY') {
+				foreach ($scriptChildCodes as $childCode) {
+					if (!isset($optionsByCode[$childCode])) {
+						continue;
+					}
+					$childKey = $optionsByCode[$childCode]['key'];
+					$child = $optionsByCode[$childCode]['row'];
+					?>
+					<tr class="tools-gps-filed tools-gps-filed--nested">
+						<td class="tools-gps-filed__active">
+							<input type="checkbox" name="OPTIONS[<?= $childKey ?>][ACTIVE]" value="Y" size="60" <?php if (!empty($child['ACTIVE']) && $child['ACTIVE'] == 'Y') echo 'checked' ?>>
+							<input type="hidden" name="OPTIONS[<?= $childKey ?>][CODE_OPTION]" value="<?= htmlspecialcharsbx($childCode) ?>" size="60">
+						</td>
+						<td class="tools-gps-filed__name">
+							<?= htmlspecialcharsbx($child['NAME_OPTION']) ?>
+						</td>
+						<td class="tools-gps-filed__value">
+							<select name="OPTIONS[<?= $childKey ?>][LIMITATION]">
+								<?php foreach ($limitation as $keyLimitation => $valueLimitation) { ?>
+									<option value="<?= $keyLimitation ?>" <?php if ($child['LIMITATION'] == $keyLimitation) echo 'selected' ?>><?= $valueLimitation ?></option>
+								<?php } ?>
+							</select>
+						</td>
+					</tr>
+					<?php
+				}
+			}
+			continue;
+		}
+		?>
 		<tr class="tools-gps-filed">
 			<td class="tools-gps-filed__active">
 				<input type="checkbox" name="OPTIONS[<?= $keyOption ?>][ACTIVE]" value="Y" size="60" <?php if (!empty($valueOption['ACTIVE']) && $valueOption['ACTIVE'] == 'Y') echo 'checked' ?>>
 				<input type="hidden" name="OPTIONS[<?= $keyOption ?>][CODE_OPTION]" value="GOOGLE_PS_OPTION" size="60">
 			</td>
 			<td class="tools-gps-filed__name">
-				<?= $valueOption["NAME_OPTION"] ?>
+				<?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?>
 			</td>
 			<td class="tools-gps-filed__value">
 				<select name="OPTIONS[<?= $keyOption ?>][LIMITATION]">
 					<?php foreach ($limitation as $keyLimitation => $valueLimitation) { ?>
-						<option value="<?= $keyLimitation ?>" <?php if ($valueOption["LIMITATION"] == $keyLimitation) echo 'selected' ?>><?= $valueLimitation ?></option>
+						<option value="<?= $keyLimitation ?>" <?php if ($valueOption['LIMITATION'] == $keyLimitation) echo 'selected' ?>><?= $valueLimitation ?></option>
 					<?php } ?>
 				</select>
 			</td>
@@ -1403,6 +1464,20 @@ elseif ($DB->GetErrorMessage() != "")
 	.tools-gps-filed {
 		display: flex;
 		align-items: center;
+	}
+
+	.tools-gps-filed--heading .tools-gps-filed__name {
+		font-size: 14px;
+		padding-top: 8px;
+		padding-bottom: 4px;
+	}
+
+	.tools-gps-filed--nested .tools-gps-filed__name {
+		padding-left: 18px;
+	}
+
+	.tools-gps-filed--nested .tools-gps-filed__active {
+		padding-left: 12px;
 	}
 
 	.tools-gps-filed>.tools-gps-filed__text {

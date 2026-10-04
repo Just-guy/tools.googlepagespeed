@@ -19,7 +19,7 @@
 
 Это дополнение поверх шаблона, не замена нормальной оптимизации. После установки всё выключено — работает только после включения опций и «Применить».
 
-Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.3.2`).
+Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.3.4`).
 
 ## Структура
 
@@ -44,6 +44,52 @@
 | `install/` | Установка / удаление, копия admin-скрипта |
 
 Админка: **Настройки → Инструменты для Google PageSpeed → Настройки**.
+
+## Карта классов и методов (v1.3.4)
+
+Поток публички: `OnEndBufferContent` → `Main` → (опции / link / script) → HTML.
+
+```
+Main::OnEndBufferContent
+  ├─ ScriptDeferral::reset
+  ├─ BufferGuard::shouldSkip → выход
+  ├─ SettingsProvider::getLinksCssStyles(ACTIVE=Y)
+  │    └─ HtmlBuffer::insertAfterOpeningHead  (preload/prefetch…)
+  ├─ SettingsProvider::getOptions(ACTIVE=Y)
+  │    ├─ LIMITATION=for-gps-robot → RobotDetector::isPageSpeedRobot
+  │    ├─ OPTION_TYPE=regular-expression → preg_replace (вырезать Метрику/GA/GTM)
+  │    └─ OPTION_TYPE=function → OptionActions::run(OPTION_ACTION)
+  │         ├─ eliminateStyleSheetsThatBlockDisplay
+  │         ├─ eliminateScriptsGeneralJs  → relocateMatchingHeadScripts(jquery)
+  │         ├─ eliminateScriptsAsproJs    → relocateMatchingHeadScripts(speed.min)
+  │         ├─ addLoadingLazyAttributeAllTagsImg
+  │         ├─ addDecodingAsyncAttributeAllTagsImg
+  │         ├─ ScriptDeferral::deferYandexMetrika
+  │         └─ ScriptDeferral::deferGoogleAnalytics
+  ├─ SettingsProvider::getLinksJsScripts(ACTIVE=Y)
+  │    └─ HtmlBuffer::addAttributeToMatchingScripts  (async/defer по правилам вкладки)
+  └─ ScriptDeferral::injectRuntime  (idle/interaction loader перед </body>)
+```
+
+| Класс | За что | Методы |
+|-------|--------|--------|
+| **Main** | Единственный вход с хука | `OnEndBufferContent` |
+| **BufferGuard** | Не трогать admin/AJAX/CLI/без head | `shouldSkip` |
+| **SettingsProvider** | Чтение настроек + ManagedCache | `getOptions`, `getLinksCssStyles`, `getLinksJsScripts`, `clearCache` |
+| **RobotDetector** | UA Lighthouse | `isPageSpeedRobot` |
+| **HtmlBuffer** | Правки разметки для вкладок link/script | `insertAfterOpeningHead`, `addAttributeToMatchingScripts` |
+| **OptionActions** | Реестр и тело опций вкладки «Опции» | `run`, `eliminateStyleSheets…`, `eliminateScriptsGeneralJs`, `eliminateScriptsAsproJs`, `eliminateScriptsThatBlockDisplay` (deprecated alias = оба), `relocateMatchingHeadScripts` (private), `addLoadingLazy…`, `addDecodingAsync…`, `ensureEliminateScriptsOption`, `ensureImgAttributeOptions`, `getImgAttributeOptionDefinitions` |
+| **ScriptDeferral** | Пресеты «отложить» (не путать с вырезать) | `reset`, `deferYandexMetrika`, `deferGoogleAnalytics`, `injectRuntime` |
+| **DeferredPresets** | Строки БД для пресетов E | `getOptionDefinitions`, `ensureOptions` |
+| **PageScriptScanner** | AJAX-скан вкладки «Тэг script» | `scan`, `parseUrlList`, `getPublicOrigin`, `normalizeSrc`, `suggestPublicPart` |
+| **ScriptScanCatalog** | Справочник сканера | `getHideRules`, `getPresets`, `getScanUrlPresets`, `matchHide`, `matchPreset` |
+| **GPSOptionsTable** | ORM `b_gps_options` | стандартный DataManager + `exitsOrCreateTable` / `dropTable` |
+| **ConnectedCssStyleTable** | ORM правил link | то же |
+| **ConnectedJsScriptTable** | ORM правил script | то же |
+
+**OPTION_TYPE в БД:** `function` (вызов из ACTIONS), `regular-expression` (вырезание), `heading` (только UI, Main не вызывает).
+
+**Eliminate scripts:** заголовок `ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY` (`heading`); дети `ELIMINATE_SCRIPTS_GENERAL_JS` / `ELIMINATE_SCRIPTS_ASPRO_JS`. Перенос из `<head>` сразу после `<body>` в `<!--gps-rb-scripts-->`.
 
 ## Ключевые решения (код)
 
@@ -115,6 +161,8 @@
 - Отложенный CSS может давать FOUC — проверять на копии.
 - Нестандартные сниппеты Метрики/GTM (компонент, сторонний плагин) могут не попасть под regexp.
 - Опция «устранить скрипты, блокирующие рендеринг» когда-то ломала JS на сайте — в истории коммитов отключали; включать только осознанно и проверять.
+- **v1.3.3 (2026-10-04):** `eliminateScriptsThatBlockDisplay` переписан: **не** вешает `defer` на все `<script src>`. Allowlist (`jquery*.js`, `speed.min.js`) **переносится из `<head>`** в начало body-кластера (перед `/bitrix/js/` / `template_*.js`), sync-порядок сохранён — иначе ломаются Aspro `template_*.js` и inline `$()`. Опция снова в install + `ensureEliminateScriptsOption()`; на pro-case включена через `local/php_interface/scripts/enable_gps_eliminate_scripts.php`.
+- **v1.3.4 (2026-10-04):** UI: «Устранить скрипты…» — **heading** без select; подпункты **Общий JS** (jquery) и **Aspro Js** (`speed.min.js`), каждый со своим ACTIVE/LIMITATION. Вставка сразу после `<body>` в блок `<!--gps-rb-scripts-->` (раньше перенос перед core.js ломал mid-body `CheckTopMenuDotted()`). `OPTION_TYPE=heading` в админке без чекбокса/select.
 - Модуль правит уже собранный HTML regex’ами — хрупко при нестандартной разметке.
 
 ## Возможные доработки
@@ -133,7 +181,7 @@
 
 ### Средний приоритет (нужна аккуратность)
 
-6. **Безопасный «defer всем скриптам»** — вернуть опцию с whitelist/blacklist URL (раньше ломала JS).
+6. ~~**Безопасный «defer всем скриптам»**~~ — частично: v1.3.3 relocate allowlist (jquery/speed) из head; полный defer+whitelist пока не делали.
 7. **Вырезание других пикселей** (VK, FB, TikTok, calltracking) — «для всех / только робот».
 8. **Область действия по URL** — правила только для выбранных страниц.
 9. **Лучший детект робота** — не только `Lighthouse` в UA (`PageSpeed`, `Chrome-Lighthouse`, PSI и т.п.).

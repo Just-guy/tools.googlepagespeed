@@ -105,14 +105,30 @@ class Tools_googlepagespeed extends CModule
 				'OPTION_TYPE' => 'function',
 				'LIMITATION' => 'for-everyone'
 			],
-			//[
-			//	'ACTIVE' => 'N',
-			//	'CODE_OPTION' => 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY',
-			//	'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
-			//	'OPTION_ACTION' => "eliminateScriptsThatBlockDisplay",
-			//	'OPTION_TYPE' => 'function',
-			//	'LIMITATION' => 'for-everyone'
-			//],
+			[
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY',
+				'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
+				'OPTION_ACTION' => '',
+				'OPTION_TYPE' => 'heading',
+				'LIMITATION' => 'for-everyone'
+			],
+			[
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_GENERAL_JS',
+				'NAME_OPTION' => 'Общий JS',
+				'OPTION_ACTION' => 'eliminateScriptsGeneralJs',
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone'
+			],
+			[
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_ASPRO_JS',
+				'NAME_OPTION' => 'Aspro Js',
+				'OPTION_ACTION' => 'eliminateScriptsAsproJs',
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone'
+			],
 			[
 				'ACTIVE' => 'N',
 				'CODE_OPTION' => 'ADD_LOADING_LAZY_ATTRIBUTE_ALL_TAGS_IMG',

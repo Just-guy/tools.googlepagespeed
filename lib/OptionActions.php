@@ -7,13 +7,23 @@ class OptionActions
 	/** @var array<string, array{0: class-string, 1: string}> */
 	private const ACTIONS = [
 		'eliminateStyleSheetsThatBlockDisplay' => [self::class, 'eliminateStyleSheetsThatBlockDisplay'],
-		'eliminateScriptsThatBlockDisplay' => [self::class, 'eliminateScriptsThatBlockDisplay'],
+		'eliminateScriptsGeneralJs' => [self::class, 'eliminateScriptsGeneralJs'],
+		'eliminateScriptsAsproJs' => [self::class, 'eliminateScriptsAsproJs'],
 		'addLoadingLazyAttributeAllTagsImg' => [self::class, 'addLoadingLazyAttributeAllTagsImg'],
 		'addDecodingAsyncAttributeAllTagsImg' => [self::class, 'addDecodingAsyncAttributeAllTagsImg'],
 		'deferYandexMetrika' => [ScriptDeferral::class, 'deferYandexMetrika'],
 		'deferGoogleAnalytics' => [ScriptDeferral::class, 'deferGoogleAnalytics'],
 		// 'deferJivoChat' => [ScriptDeferral::class, 'deferJivoChat'],
 	];
+
+	/** Общий JS вне ядра Bitrix (jQuery и т.п.). */
+	private const GENERAL_JS_SRC = '/(?:\/(?:js\/)?jquery(?:-\d+(?:\.\d+)*)?(?:\.min)?\.js(?:\?|#|$))/i';
+
+	/** Скрипты решений Aspro в head (speed.min.js и аналоги). */
+	private const ASPRO_JS_SRC = '/(?:\/speed\.min\.js(?:\?|#|$))/i';
+
+	private const RB_SCRIPTS_OPEN = '<!--gps-rb-scripts-->';
+	private const RB_SCRIPTS_CLOSE = '<!--/gps-rb-scripts-->';
 
 	/** Подстроки src пикселей/счётчиков (в нижнем регистре). */
 	private const IMG_PIXEL_MARKERS = [
@@ -178,20 +188,195 @@ class OptionActions
 		return '';
 	}
 
+	/**
+	 * Общий JS (jQuery и др.): убрать render-blocking из <head>.
+	 * Не defer — перенос сразу после <body>, до mid-body inline (CheckTopMenuDotted и т.п.).
+	 */
+	public static function eliminateScriptsGeneralJs(&$content)
+	{
+		self::relocateMatchingHeadScripts($content, self::GENERAL_JS_SRC);
+	}
+
+	/**
+	 * Aspro JS (speed.min.js и др. шаблонные в head).
+	 */
+	public static function eliminateScriptsAsproJs(&$content)
+	{
+		self::relocateMatchingHeadScripts($content, self::ASPRO_JS_SRC);
+	}
+
+	/**
+	 * @deprecated Оставлено для совместимости; используйте eliminateScriptsGeneralJs / AsproJs.
+	 */
 	public static function eliminateScriptsThatBlockDisplay(&$content)
 	{
-		$content = preg_replace_callback(
-			'/<script\b[^>]*\bsrc\s*=[^>]*>/i',
-			static function ($match) {
-				$tag = $match[0];
-				if (preg_match('/\b(?:async|defer)\b/i', $tag)) {
-					return $tag;
+		self::eliminateScriptsGeneralJs($content);
+		self::eliminateScriptsAsproJs($content);
+	}
+
+	/**
+	 * Вырезать sync &lt;script src&gt; из &lt;head&gt; по allowlist и вставить после &lt;body&gt;
+	 * в общий блок <!--gps-rb-scripts-->, чтобы несколько опций сохраняли порядок вызовов.
+	 */
+	private static function relocateMatchingHeadScripts(string &$content, string $allowSrc): void
+	{
+		$headEnd = stripos($content, '</head>');
+		if ($headEnd === false) {
+			return;
+		}
+
+		$head = substr($content, 0, $headEnd);
+		$rest = substr($content, $headEnd);
+		$moved = [];
+
+		$head = preg_replace_callback(
+			'/<script\b([^>]*)>(.*?)<\/script>/is',
+			static function ($match) use ($allowSrc, &$moved) {
+				$attrs = $match[1];
+				if (!preg_match('/\bsrc\s*=\s*([\'"])(.*?)\1/i', $attrs, $srcMatch)) {
+					return $match[0];
+				}
+				if (preg_match('/\b(?:async|defer)\b/i', $attrs)) {
+					return $match[0];
+				}
+				if (!preg_match($allowSrc, $srcMatch[2])) {
+					return $match[0];
 				}
 
-				return preg_replace('/<script\b/i', '<script defer', $tag, 1);
+				$moved[] = $match[0];
+				return '';
 			},
-			$content
+			$head
 		);
+
+		if ($moved === []) {
+			return;
+		}
+
+		$chunk = implode("\n", $moved) . "\n";
+		$content = $head . $rest;
+
+		$open = self::RB_SCRIPTS_OPEN;
+		$close = self::RB_SCRIPTS_CLOSE;
+
+		if (preg_match(
+			'/' . preg_quote($open, '/') . '(.*?)' . preg_quote($close, '/') . '/is',
+			$content,
+			$blockMatch,
+			PREG_OFFSET_CAPTURE
+		)) {
+			$inner = $blockMatch[1][0] . $chunk;
+			$replacement = $open . "\n" . $inner . $close;
+			$content = substr_replace($content, $replacement, (int)$blockMatch[0][1], strlen($blockMatch[0][0]));
+			return;
+		}
+
+		$wrapped = $open . "\n" . $chunk . $close . "\n";
+		if (preg_match('/<body\b[^>]*>/i', $content, $bodyMatch, PREG_OFFSET_CAPTURE)) {
+			$pos = (int)$bodyMatch[0][1] + strlen($bodyMatch[0][0]);
+			$content = substr($content, 0, $pos) . "\n" . $wrapped . substr($content, $pos);
+			return;
+		}
+
+		if (preg_match('/<\/body>/i', $content)) {
+			$content = preg_replace('/<\/body>/i', $wrapped . '</body>', $content, 1);
+			return;
+		}
+
+		$content .= $wrapped;
+	}
+
+	/**
+	 * Заголовок + подпункты «Общий JS» / «Aspro Js» для eliminate scripts.
+	 */
+	public static function ensureEliminateScriptsOption(): void
+	{
+		$byCode = [];
+		foreach (SettingsProvider::getOptions([]) as $row) {
+			$code = (string)($row['CODE_OPTION'] ?? '');
+			if ($code !== '') {
+				$byCode[$code] = $row;
+			}
+		}
+
+		$changed = false;
+
+		if (isset($byCode['ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY'])) {
+			$parent = $byCode['ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY'];
+			$needUpdate =
+				($parent['OPTION_TYPE'] ?? '') !== 'heading'
+				|| (string)($parent['NAME_OPTION'] ?? '') !== 'Устранить скрипты, блокирующие рендеринг'
+				|| (string)($parent['OPTION_ACTION'] ?? '') !== '';
+
+			if ($needUpdate) {
+				GPSOptionsTable::update((int)$parent['ID'], [
+					'ACTIVE' => 'N',
+					'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
+					'OPTION_ACTION' => '',
+					'OPTION_TYPE' => 'heading',
+					'LIMITATION' => 'for-everyone',
+				]);
+				$changed = true;
+			}
+			$wasActive = (($parent['ACTIVE'] ?? 'N') === 'Y' && ($parent['OPTION_TYPE'] ?? '') === 'function');
+		} else {
+			GPSOptionsTable::add([
+				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY',
+				'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
+				'OPTION_ACTION' => '',
+				'OPTION_TYPE' => 'heading',
+				'LIMITATION' => 'for-everyone',
+			]);
+			$wasActive = false;
+			$changed = true;
+		}
+
+		$children = [
+			[
+				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_GENERAL_JS',
+				'NAME_OPTION' => 'Общий JS',
+				'OPTION_ACTION' => 'eliminateScriptsGeneralJs',
+			],
+			[
+				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_ASPRO_JS',
+				'NAME_OPTION' => 'Aspro Js',
+				'OPTION_ACTION' => 'eliminateScriptsAsproJs',
+			],
+		];
+
+		foreach ($children as $child) {
+			if (isset($byCode[$child['CODE_OPTION']])) {
+				$row = $byCode[$child['CODE_OPTION']];
+				$needUpdate =
+					(string)($row['NAME_OPTION'] ?? '') !== $child['NAME_OPTION']
+					|| (string)($row['OPTION_ACTION'] ?? '') !== $child['OPTION_ACTION']
+					|| (string)($row['OPTION_TYPE'] ?? '') !== 'function';
+				if ($needUpdate) {
+					GPSOptionsTable::update((int)$row['ID'], [
+						'NAME_OPTION' => $child['NAME_OPTION'],
+						'OPTION_ACTION' => $child['OPTION_ACTION'],
+						'OPTION_TYPE' => 'function',
+					]);
+					$changed = true;
+				}
+				continue;
+			}
+
+			GPSOptionsTable::add([
+				'ACTIVE' => $wasActive ? 'Y' : 'N',
+				'CODE_OPTION' => $child['CODE_OPTION'],
+				'NAME_OPTION' => $child['NAME_OPTION'],
+				'OPTION_ACTION' => $child['OPTION_ACTION'],
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone',
+			]);
+			$changed = true;
+		}
+
+		if ($changed) {
+			SettingsProvider::clearCache();
+		}
 	}
 
 	public static function addLoadingLazyAttributeAllTagsImg(&$content)
