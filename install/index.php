@@ -66,12 +66,8 @@ class Tools_googlepagespeed extends CModule
 				'ACTIVE' => 'N',
 				'CODE_OPTION' => 'YANDEX_METRIKA',
 				'NAME_OPTION' => 'Вырезать скрипты Яндекс метрики',
-				'OPTION_ACTION' => serialize([
-					"<!-- Yandex\.Metrika counter -->.*<!-- \/Yandex\.Metrika counter -->",
-					"<script(\s?| type=\W?text\/javascript\W?)>.\s*\(function\s?\(m,\s?e,\s?t,\s?r,\s?i,\s?k,\s?a\).*<\/script>",
-					"<noscript.*mc\.yandex\.ru.*\/noscript>"
-				]),
-				'OPTION_TYPE' => 'regular-expression',
+				'OPTION_ACTION' => 'cutYandexMetrika',
+				'OPTION_TYPE' => 'function',
 				'LIMITATION' => 'for-gps-robot'
 			],
 			[

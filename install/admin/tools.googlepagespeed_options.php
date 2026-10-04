@@ -31,6 +31,7 @@ Loader::includeModule($module_id);
 // Опции img-атрибутов и пресеты отложенной загрузки для уже установленных модулей
 Tools\GooglePageSpeed\OptionActions::ensureImgAttributeOptions();
 Tools\GooglePageSpeed\OptionActions::ensureEliminateScriptsOption();
+Tools\GooglePageSpeed\OptionActions::ensureYandexMetrikaCutOption();
 Tools\GooglePageSpeed\DeferredPresets::ensureOptions();
 
 // AJAX: скан скриптов публичной страницы

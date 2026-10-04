@@ -9,6 +9,7 @@ class OptionActions
 		'eliminateStyleSheetsThatBlockDisplay' => [self::class, 'eliminateStyleSheetsThatBlockDisplay'],
 		'eliminateScriptsGeneralJs' => [self::class, 'eliminateScriptsGeneralJs'],
 		'eliminateScriptsAsproJs' => [self::class, 'eliminateScriptsAsproJs'],
+		'cutYandexMetrika' => [self::class, 'cutYandexMetrika'],
 		'addLoadingLazyAttributeAllTagsImg' => [self::class, 'addLoadingLazyAttributeAllTagsImg'],
 		'addDecodingAsyncAttributeAllTagsImg' => [self::class, 'addDecodingAsyncAttributeAllTagsImg'],
 		'deferYandexMetrika' => [ScriptDeferral::class, 'deferYandexMetrika'],
@@ -186,6 +187,82 @@ class OptionActions
 		}
 
 		return '';
+	}
+
+	/**
+	 * Вырезать Яндекс.Метрику из HTML (модуль yandex.metrika + классический счётчик).
+	 * Надёжнее старых regexp в БД: Bitrix вставляет /bitrix/js/yandex.metrika/script.js
+	 * и блок <!-- Yandex.Metrika counter -->, а не только «ручной» сниппет.
+	 */
+	public static function cutYandexMetrika(&$content): void
+	{
+		$content = preg_replace(
+			'/<!--\s*Yandex\.Metrika counter\s*-->.*?<!--\s*\/Yandex\.Metrika counter\s*-->/is',
+			'',
+			$content
+		);
+
+		$content = preg_replace(
+			'/<script\b[^>]*\bsrc\s*=\s*([\'"])[^\'"]*(?:\/yandex\.metrika\/|mc\.yandex\.(?:ru|com)\/metrika)[^\'"]*\1[^>]*>\s*<\/script>/is',
+			'',
+			$content
+		);
+
+		$content = preg_replace(
+			'/<script\b[^>]*>[^<]*\(function\s*\(\s*m\s*,\s*e\s*,\s*t\s*,\s*r\s*,\s*i\s*,\s*k\s*,\s*a\s*\).*?mc\.yandex\.(?:ru|com)[^<]*<\/script>/is',
+			'',
+			$content
+		);
+
+		$content = preg_replace(
+			'/<noscript\b[^>]*>.*?mc\.yandex\.(?:ru|com)[^<]*<\/noscript>/is',
+			'',
+			$content
+		);
+
+		$content = preg_replace(
+			'/<script\b[^>]*>\s*window\.dataLayerName\s*=.*?<\/script>/is',
+			'',
+			$content
+		);
+
+		$content = preg_replace(
+			'/<script\b[^>]*>\s*window\[window\.dataLayerName\]\s*=.*?<\/script>/is',
+			'',
+			$content
+		);
+
+		$content = preg_replace(
+			'/<script\b[^>]*>\s*window\.counters\s*=\s*\[[^\]]*\];\s*<\/script>/is',
+			'',
+			$content
+		);
+	}
+
+	/**
+	 * Перевести опцию YANDEX_METRIKA с устаревших regexp на cutYandexMetrika.
+	 */
+	public static function ensureYandexMetrikaCutOption(): void
+	{
+		foreach (SettingsProvider::getOptions([]) as $row) {
+			if ((string)($row['CODE_OPTION'] ?? '') !== 'YANDEX_METRIKA') {
+				continue;
+			}
+
+			$type = (string)($row['OPTION_TYPE'] ?? '');
+			$action = (string)($row['OPTION_ACTION'] ?? '');
+			if ($type === 'function' && $action === 'cutYandexMetrika') {
+				return;
+			}
+
+			GPSOptionsTable::update((int)$row['ID'], [
+				'NAME_OPTION' => 'Вырезать скрипты Яндекс метрики',
+				'OPTION_ACTION' => 'cutYandexMetrika',
+				'OPTION_TYPE' => 'function',
+			]);
+			SettingsProvider::clearCache();
+			return;
+		}
 	}
 
 	/**

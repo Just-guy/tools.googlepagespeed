@@ -19,7 +19,7 @@
 
 Это дополнение поверх шаблона, не замена нормальной оптимизации. После установки всё выключено — работает только после включения опций и «Применить».
 
-Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.3.4`).
+Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.3.5`).
 
 ## Структура
 
@@ -62,6 +62,7 @@ Main::OnEndBufferContent
   │         ├─ eliminateStyleSheetsThatBlockDisplay
   │         ├─ eliminateScriptsGeneralJs  → relocateMatchingHeadScripts(jquery)
   │         ├─ eliminateScriptsAsproJs    → relocateMatchingHeadScripts(speed.min)
+  │         ├─ cutYandexMetrika
   │         ├─ addLoadingLazyAttributeAllTagsImg
   │         ├─ addDecodingAsyncAttributeAllTagsImg
   │         ├─ ScriptDeferral::deferYandexMetrika
@@ -162,6 +163,7 @@ Main::OnEndBufferContent
 - Нестандартные сниппеты Метрики/GTM (компонент, сторонний плагин) могут не попасть под regexp.
 - Опция «устранить скрипты, блокирующие рендеринг» когда-то ломала JS на сайте — в истории коммитов отключали; включать только осознанно и проверять.
 - **v1.3.3 (2026-10-04):** `eliminateScriptsThatBlockDisplay` переписан: **не** вешает `defer` на все `<script src>`. Allowlist (`jquery*.js`, `speed.min.js`) **переносится из `<head>`** в начало body-кластера (перед `/bitrix/js/` / `template_*.js`), sync-порядок сохранён — иначе ломаются Aspro `template_*.js` и inline `$()`. Опция снова в install + `ensureEliminateScriptsOption()`; на pro-case включена через `local/php_interface/scripts/enable_gps_eliminate_scripts.php`.
+- **v1.3.5 (2026-10-04):** «Вырезать Яндекс метрику» переведена с regexp на `cutYandexMetrika` (счётчик + `/bitrix/js/yandex.metrika/script.js` + dataLayer/counters). Старые regexp не ловили модуль Bitrix `yandex.metrika`. **Композит:** при `Cache` nginx отдаёт `html_pages` без PHP → GPS не отрабатывает; в `_docker/nginx/.../composite.conf` добавлен skip для UA Lighthouse/PageSpeed. На проде нужен такой же bypass + ACTIVE опции. `RobotDetector` расширен (Chrome-Lighthouse, PageSpeed, PTST…).
 - **v1.3.4 (2026-10-04):** UI: «Устранить скрипты…» — **heading** без select; подпункты **Общий JS** (jquery) и **Aspro Js** (`speed.min.js`), каждый со своим ACTIVE/LIMITATION. Вставка сразу после `<body>` в блок `<!--gps-rb-scripts-->` (раньше перенос перед core.js ломал mid-body `CheckTopMenuDotted()`). `OPTION_TYPE=heading` в админке без чекбокса/select.
 - Модуль правит уже собранный HTML regex’ами — хрупко при нестандартной разметке.
 
