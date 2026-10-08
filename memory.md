@@ -180,6 +180,7 @@ AJAX (POST + sessid, право ≥ `S`): `gps_psi_save_key`, `gps_psi_start`, `
 - На вкладках link/script — справочники (rel и defer/async) по макетам; кнопки «Добавить url» / «Применить» — классы `tools-gps-btn` + `adm-btn-save` (зелёный градиент Bitrix).
 - Кастомный CSS на `.tools-gps-filed` не должен перебивать фон `adm-btn-save` у кнопок сохранения.
 - **Всплывающая подсказка (референс):** если просят оформить текст «как подсказку во всплывашке» — образец **вкладка «Опции»**: разметка `.tools-gps-filed__hint-wrap` + кнопка `.tools-gps-filed__hint-btn--warn` (иконка «!» в круге) + `.tools-gps-filed__hint--warn` (`role="tooltip"`), стили в `css/style.css`. Не делать голый `title` / отдельный блок под полем, если имеется в виду эта всплывашка.
+- **Единый вид полей ввода/select:** референс — «URL прогона» / «Число прогонов (N)» на «Разброс PSI». Общие правила в `css/style.css` (без `!important`). Bitrix бьёт `.adm-workarea input[type=text|password|email]:not(.ui-tag-selector-text-box)` (спец. 0,3,1, файл admin позже) — `type=url|number` в него не входят, поэтому URL/N выглядели «правильно». Наши селекторы — с лишним классом-предком (`.tools-gps-psi` / `.tools-gps-filed`) + тем же `:not(...)`, спец. ≥ 0,4,1; явно сбрасывать `height: 25px` → `height: auto; min-height: 32px`.
 
 ## Осторожности
 

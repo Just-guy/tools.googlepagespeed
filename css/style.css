@@ -8,6 +8,120 @@
 		border: none !important;
 	}
 
+	/*
+	 * Единый вид полей (референс: URL прогона / N).
+	 * Bitrix: .adm-workarea input[type=text|password|email]:not(.ui-tag-selector-text-box) → 0,3,1 + позже в cascade.
+	 * URL/N не попадали в то правило (type=url|number). Нужна специфичность ≥ 0,4,1 без !important.
+	 */
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="text"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="password"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="email"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="url"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="number"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-psi textarea.tools-gps-scan__url,
+	.adm-workarea .tools-gps-scan textarea.tools-gps-scan__url,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="text"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="password"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="email"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="url"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="number"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-psi select.tools-gps-psi__select,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value select,
+	.adm-workarea .tools-gps-options-panel .tools-gps-filed__value select {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 6px 10px;
+		height: auto;
+		min-height: 32px;
+		border: 1px solid #cbd5e1;
+		border-radius: 4px;
+		background-color: #fff;
+		background-image: none;
+		box-shadow: none;
+		color: #0f172a;
+		font-family: inherit;
+		font-size: 13px;
+		font-weight: 400;
+		line-height: 1.35;
+		text-shadow: none;
+		vertical-align: middle;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		appearance: none;
+	}
+
+	.adm-workarea .tools-gps-psi select.tools-gps-psi__select,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value select,
+	.adm-workarea .tools-gps-options-panel .tools-gps-filed__value select {
+		padding-right: 28px;
+		cursor: pointer;
+		background-color: #fff;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2364748b' d='M1.2 1.5h9.6L6 6.5 1.2 1.5z'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 8px center;
+		background-size: 12px 8px;
+	}
+
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="text"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="password"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="email"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="url"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="number"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-psi textarea.tools-gps-scan__url:hover,
+	.adm-workarea .tools-gps-scan textarea.tools-gps-scan__url:hover,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="text"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="password"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="email"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="url"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="number"]:not(.ui-tag-selector-text-box):hover,
+	.adm-workarea .tools-gps-psi select.tools-gps-psi__select:hover,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value select:hover,
+	.adm-workarea .tools-gps-options-panel .tools-gps-filed__value select:hover {
+		border-color: #94a3b8;
+		background-color: #fff;
+		color: #0f172a;
+		box-shadow: none;
+		text-decoration: none;
+	}
+
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="text"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="password"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="email"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="url"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-psi input.tools-gps-psi__input[type="number"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-psi textarea.tools-gps-scan__url:focus,
+	.adm-workarea .tools-gps-scan textarea.tools-gps-scan__url:focus,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="text"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="password"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="email"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="url"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="number"]:not(.ui-tag-selector-text-box):focus,
+	.adm-workarea .tools-gps-psi select.tools-gps-psi__select:focus,
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value select:focus,
+	.adm-workarea .tools-gps-options-panel .tools-gps-filed__value select:focus {
+		border-color: #64748b;
+		background-color: #fff;
+		color: #0f172a;
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.18);
+	}
+
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="text"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="password"]:not(.ui-tag-selector-text-box),
+	.adm-workarea .tools-gps-filed .tools-gps-filed__value input[type="url"]:not(.ui-tag-selector-text-box) {
+		min-width: 160px;
+	}
+
+	.adm-workarea .tools-gps-options-panel .tools-gps-filed__value select {
+		min-width: 120px;
+	}
+
+	.adm-workarea .tools-gps-psi textarea.tools-gps-scan__url,
+	.adm-workarea .tools-gps-scan textarea.tools-gps-scan__url {
+		min-height: 54px;
+		height: auto;
+	}
+
 	.tools-gps-options-layout {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -210,14 +324,7 @@
 		min-width: 120px;
 		max-width: 100%;
 		min-height: 54px;
-		padding: 8px 10px;
-		border: 1px solid #c6cdd3;
-		border-radius: 4px;
-		box-sizing: border-box;
 		resize: vertical;
-		font-family: inherit;
-		font-size: 13px;
-		line-height: 1.4;
 	}
 
 	.tools-gps-scan__stats {
@@ -335,10 +442,6 @@
 		padding-bottom: 4px;
 	}
 
-	.tools-gps-filed--nested .tools-gps-filed__name {
-		padding-left: 18px;
-	}
-
 	.tools-gps-filed--nested .tools-gps-filed__active {
 		padding-left: 12px;
 	}
@@ -352,7 +455,7 @@
 	}
 
 	.tools-gps-filed>td {
-		margin-right: 15px;
+		margin-right: 5px;
 	}
 
 	.tools-gps-filed__number,
@@ -895,10 +998,6 @@
 	.tools-gps-psi__input {
 		min-width: 280px;
 		flex: 1;
-		padding: 6px 10px;
-		border: 1px solid #cbd5e1;
-		border-radius: 4px;
-		font-size: 13px;
 	}
 
 	.tools-gps-psi__input--n {
@@ -994,10 +1093,6 @@
 	.tools-gps-psi__select {
 		min-width: 320px;
 		flex: 1;
-		padding: 6px 8px;
-		font-size: 13px;
-		border: 1px solid #cbd5e1;
-		border-radius: 4px;
 	}
 
 	.tools-gps-psi__report {
