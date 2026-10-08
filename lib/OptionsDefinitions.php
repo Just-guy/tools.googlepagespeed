@@ -42,13 +42,13 @@ class OptionsDefinitions
 			[
 				'ACTIVE' => 'N',
 				'CODE_OPTION' => 'NONBLOCKING_GOOGLE_FONTS_CSS',
-				'NAME_OPTION' => 'Убрать блокировку рендера у CSS Google Fonts',
+				'NAME_OPTION' => 'Убрать блокировку рендера у Google Fonts',
 				'OPTION_ACTION' => 'deferGoogleFontsStylesheet',
 				'OPTION_TYPE' => 'function',
 				'LIMITATION' => 'for-everyone',
 				'PANEL' => 'main',
-				'HINT' => 'Только HTML <link rel="stylesheet" href="https://fonts.googleapis.com/…">.
-Подключение через @import в CSS или в <style> не обрабатывается — вынесите шрифт в <link>',
+				'HINT' => 'Только HTML-тег <link rel="stylesheet" href="https://fonts.googleapis.com/…">. '
+					. 'Если шрифт подключён через @import в файле стилей или в <style> — опция его не увидит, необходимо вынесите в <link>.',
 			],
 			[
 				'ACTIVE' => 'N',
