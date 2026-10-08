@@ -937,6 +937,19 @@ elseif ($DB->GetErrorMessage() != "")
 							<input type="number" class="tools-gps-psi__input tools-gps-psi__input--n" id="tools-gps-psi-n" min="1" max="20" value="5">
 							<div class="tools-gps-psi__hint">Эмпирически 5 прогонов достаточно для более-менее реалистичной картины разброса.</div>
 						</div>
+						<div class="tools-gps-psi__field tools-gps-psi__field--prefix">
+							<label class="tools-gps-psi__label" for="tools-gps-psi-label-prefix">Префикс в названии</label>
+							<input
+								type="text"
+								class="tools-gps-psi__input"
+								id="tools-gps-psi-label-prefix"
+								value=""
+								maxlength="40"
+								autocomplete="off"
+								placeholder="например: до правок / после LCP"
+								title="Попадёт в начало названия серии в списке (необязательно)"
+							>
+						</div>
 						<div class="tools-gps-psi__field">
 							<span class="tools-gps-psi__label">Устройства</span>
 							<label class="tools-gps-psi__check"><input type="checkbox" id="tools-gps-psi-mobile" checked> Мобильные</label>

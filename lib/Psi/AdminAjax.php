@@ -98,7 +98,8 @@ class AdminAjax
 			return self::fail('Выберите хотя бы одно устройство (мобильные / компьютер).');
 		}
 
-		$created = VarianceStorage::createRun((string)$probe['url'], $n, $strategies);
+		$labelPrefix = VarianceStorage::normalizeLabelPrefix((string)$request->getPost('label_prefix'));
+		$created = VarianceStorage::createRun((string)$probe['url'], $n, $strategies, $labelPrefix);
 		if (!$created['ok']) {
 			return self::fail((string)($created['error'] ?: 'Не удалось создать серию.'));
 		}

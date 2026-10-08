@@ -81,9 +81,15 @@ class VarianceAggregator
 		$html = [];
 		$html[] = '<div class="tools-gps-psi-report">';
 		$html[] = '<header class="tools-gps-psi-report__header">';
-		$html[] = '<h3 class="tools-gps-psi-report__title">PSI lab variance — ' . $e($ctx['host']) . '</h3>';
+		$titleHost = $ctx['labelPrefix'] !== ''
+			? ($ctx['labelPrefix'] . ' — ' . $ctx['host'])
+			: $ctx['host'];
+		$html[] = '<h3 class="tools-gps-psi-report__title">PSI lab variance — ' . $e($titleHost) . '</h3>';
 		$html[] = '<ul class="tools-gps-psi-report__meta">';
 		$html[] = '<li><span class="tools-gps-psi-report__meta-label">Источник</span> PageSpeed Insights API</li>';
+		if ($ctx['labelPrefix'] !== '') {
+			$html[] = '<li><span class="tools-gps-psi-report__meta-label">Префикс</span> ' . $e($ctx['labelPrefix']) . '</li>';
+		}
 		$html[] = '<li><span class="tools-gps-psi-report__meta-label">URL</span> <a class="tools-gps-psi-report__url" href="' . $e($ctx['url']) . '" target="_blank" rel="noopener noreferrer">' . $e($ctx['url']) . '</a></li>';
 		$html[] = '<li><span class="tools-gps-psi-report__meta-label">N</span> ' . $e((string)$ctx['n']) . ' × ' . $e(implode(' + ', $ctx['strategies'])) . '</li>';
 		if ($ctx['when'] !== '') {
@@ -172,10 +178,16 @@ class VarianceAggregator
 		$ctx = self::buildContext($summary, $meta);
 		$by = $ctx['by'];
 
+		$titleHost = $ctx['labelPrefix'] !== ''
+			? ($ctx['labelPrefix'] . ' — ' . $ctx['host'])
+			: $ctx['host'];
 		$lines = [];
-		$lines[] = '# PSI lab variance — ' . $ctx['host'];
+		$lines[] = '# PSI lab variance — ' . $titleHost;
 		$lines[] = '';
 		$lines[] = '- **Источник:** PageSpeed Insights API';
+		if ($ctx['labelPrefix'] !== '') {
+			$lines[] = '- **Префикс:** ' . $ctx['labelPrefix'];
+		}
 		$lines[] = '- **URL:** ' . $ctx['url'];
 		$lines[] = '- **N:** ' . $ctx['n'] . ' прогонов × ' . implode(' + ', $ctx['strategies']);
 		if ($ctx['when'] !== '') {
@@ -306,9 +318,15 @@ class VarianceAggregator
 			$statusNote = 'ошибка';
 		}
 
+		$labelPrefix = '';
+		if (is_array($meta)) {
+			$labelPrefix = VarianceStorage::normalizeLabelPrefix((string)($meta['labelPrefix'] ?? ''));
+		}
+
 		return [
 			'url' => $url,
 			'host' => is_string($host) ? $host : $url,
+			'labelPrefix' => $labelPrefix,
 			'n' => $n,
 			'strategies' => $strategies,
 			'when' => $when,

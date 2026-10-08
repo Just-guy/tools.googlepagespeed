@@ -33,13 +33,15 @@ class VarianceStorage
 	 * @param list<string> $strategies mobile|desktop
 	 * @return array{ok: bool, error: ?string, runId: ?string, path: ?string, meta: ?array}
 	 */
-	public static function createRun(string $url, int $n, array $strategies): array
+	public static function createRun(string $url, int $n, array $strategies, string $labelPrefix = ''): array
 	{
 		$n = max(1, $n);
 		$strategies = self::normalizeStrategies($strategies);
 		if ($strategies === []) {
 			return ['ok' => false, 'error' => 'Выберите хотя бы одно устройство.', 'runId' => null, 'path' => null, 'meta' => null];
 		}
+
+		$labelPrefix = self::normalizeLabelPrefix($labelPrefix);
 
 		$host = self::hostFromUrl($url);
 		$stamp = self::mskStamp();
@@ -59,6 +61,7 @@ class VarianceStorage
 			'url' => $url,
 			'n' => $n,
 			'strategies' => $strategies,
+			'labelPrefix' => $labelPrefix,
 			'status' => 'running',
 			'startedAt' => self::mskNowIso(),
 			'finishedAt' => null,
@@ -394,7 +397,34 @@ class VarianceStorage
 			'error' => 'ошибка',
 		][$status] ?? $status;
 
-		return trim($datePart . ' · ' . $host . ' · ' . $deviceStr . ' · N=' . $n . ' · ' . $statusRu);
+		$parts = [];
+		$prefix = self::normalizeLabelPrefix((string)($meta['labelPrefix'] ?? ''));
+		if ($prefix !== '') {
+			$parts[] = $prefix;
+		}
+		$parts[] = $datePart;
+		$parts[] = $host;
+		$parts[] = $deviceStr;
+		$parts[] = 'N=' . $n;
+		$parts[] = $statusRu;
+
+		return implode(' · ', $parts);
+	}
+
+	public static function normalizeLabelPrefix(string $prefix): string
+	{
+		$prefix = trim(preg_replace('/\s+/u', ' ', $prefix) ?? '');
+		if ($prefix === '') {
+			return '';
+		}
+		// без разделителя «·» и управляющих символов
+		$prefix = str_replace(['·', "\0"], '', $prefix);
+		if (function_exists('mb_substr')) {
+			$prefix = mb_substr($prefix, 0, 40);
+		} else {
+			$prefix = substr($prefix, 0, 40);
+		}
+		return trim($prefix);
 	}
 
 	private static function hostFromUrl(string $url): string

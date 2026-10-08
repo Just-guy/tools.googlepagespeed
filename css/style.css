@@ -849,8 +849,8 @@
 
 	.tools-gps-psi__row--inline {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 20px 32px;
+		align-items: flex-start;
+		gap: 20px 24px;
 	}
 
 	.tools-gps-psi__label {
@@ -861,6 +861,10 @@
 		margin-bottom: 6px;
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
+	}
+
+	.tools-gps-psi__field {
+		flex: 1;
 	}
 
 	.tools-gps-psi__url-row {

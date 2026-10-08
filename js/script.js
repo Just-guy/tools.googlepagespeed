@@ -349,6 +349,7 @@
 		const el = {
 			url: document.getElementById('tools-gps-psi-url'),
 			urlFromSite: document.getElementById('tools-gps-psi-url-from-site'),
+			labelPrefix: document.getElementById('tools-gps-psi-label-prefix'),
 			key: document.getElementById('tools-gps-psi-api-key'),
 			keyStatus: document.getElementById('tools-gps-psi-key-status'),
 			saveKey: document.getElementById('tools-gps-psi-save-key'),
@@ -414,6 +415,7 @@
 			if (el.stop) el.stop.disabled = !isRunning;
 			if (el.url) el.url.disabled = isRunning;
 			if (el.urlFromSite) el.urlFromSite.disabled = isRunning;
+			if (el.labelPrefix) el.labelPrefix.disabled = isRunning;
 			if (el.n) el.n.disabled = isRunning;
 			if (el.mobile) el.mobile.disabled = isRunning;
 			if (el.desktop) el.desktop.disabled = isRunning;
@@ -599,6 +601,7 @@
 					url: probeUrl,
 					n: el.n?.value || 5,
 					strategies: strategies,
+					label_prefix: (el.labelPrefix?.value || '').trim(),
 				});
 			} catch (e) {
 				setRunningUi(false);
