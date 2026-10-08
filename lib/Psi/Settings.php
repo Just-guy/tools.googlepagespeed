@@ -22,6 +22,11 @@ class Settings
 		Option::set(self::MODULE_ID, self::OPTION_API_KEY, trim($key));
 	}
 
+	public static function clearApiKey(): void
+	{
+		Option::set(self::MODULE_ID, self::OPTION_API_KEY, '');
+	}
+
 	public static function hasApiKey(): bool
 	{
 		return self::getApiKey() !== '';

@@ -927,6 +927,7 @@ elseif ($DB->GetErrorMessage() != "")
 								placeholder="<?= $psiHasApiKey ? '•••••••• (ключ сохранён — введите новый, чтобы заменить)' : 'Вставьте ключ Google PageSpeed Insights API' ?>"
 							>
 							<input type="button" class="tools-gps-btn adm-btn-save" id="tools-gps-psi-save-key" value="Сохранить ключ">
+							<input type="button" class="adm-btn adm-btn-delete" id="tools-gps-psi-delete-key" value="Удалить ключ" <?= $psiHasApiKey ? '' : 'disabled' ?> title="Очистить сохранённый ключ API">
 							<span class="tools-gps-psi__key-status" id="tools-gps-psi-key-status" <?= $psiHasApiKey ? '' : 'hidden' ?>>ключ есть</span>
 						</div>
 					</div>

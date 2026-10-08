@@ -128,7 +128,7 @@ Main::OnEndBufferContent
 | `Psi\VarianceAggregator` | `lib/Psi/VarianceAggregator.php` | min/median/max; `toHtml` / `toMarkdown` |
 | `Psi\AdminAjax` | `lib/Psi/AdminAjax.php` | роутер `gps_psi_*` |
 
-AJAX (POST + sessid, право ≥ `S`): `gps_psi_save_key`, `gps_psi_start`, `gps_psi_run_one`, `gps_psi_finalize`, `gps_psi_list_runs`, `gps_psi_get_run`, `gps_psi_delete_run`, `gps_psi_probe_url`.
+AJAX (POST + sessid, право ≥ `S`): `gps_psi_save_key`, `gps_psi_delete_key`, `gps_psi_start`, `gps_psi_run_one`, `gps_psi_finalize`, `gps_psi_list_runs`, `gps_psi_get_run`, `gps_psi_delete_run`, `gps_psi_probe_url`.
 
 ## Код (стиль)
 

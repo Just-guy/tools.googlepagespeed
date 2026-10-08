@@ -19,6 +19,8 @@ class AdminAjax
 		switch ($action) {
 			case 'gps_psi_save_key':
 				return self::saveKey($request);
+			case 'gps_psi_delete_key':
+				return self::deleteKey();
 			case 'gps_psi_start':
 				return self::start($request);
 			case 'gps_psi_run_one':
@@ -50,6 +52,20 @@ class AdminAjax
 			'ok' => true,
 			'error' => null,
 			'hasKey' => Settings::hasApiKey(),
+		];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function deleteKey(): array
+	{
+		Settings::clearApiKey();
+
+		return [
+			'ok' => true,
+			'error' => null,
+			'hasKey' => false,
 		];
 	}
 

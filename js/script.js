@@ -353,6 +353,7 @@
 			key: document.getElementById('tools-gps-psi-api-key'),
 			keyStatus: document.getElementById('tools-gps-psi-key-status'),
 			saveKey: document.getElementById('tools-gps-psi-save-key'),
+			deleteKey: document.getElementById('tools-gps-psi-delete-key'),
 			n: document.getElementById('tools-gps-psi-n'),
 			mobile: document.getElementById('tools-gps-psi-mobile'),
 			desktop: document.getElementById('tools-gps-psi-desktop'),
@@ -521,6 +522,21 @@
 			});
 		});
 
+		function applyKeyUi(hasKey) {
+			if (el.keyStatus) {
+				el.keyStatus.hidden = !hasKey;
+				el.keyStatus.textContent = hasKey ? 'ключ есть' : '';
+			}
+			if (el.deleteKey) {
+				el.deleteKey.disabled = !hasKey;
+			}
+			if (el.key) {
+				el.key.placeholder = hasKey
+					? '•••••••• (ключ сохранён — введите новый, чтобы заменить)'
+					: 'Вставьте ключ Google PageSpeed Insights API';
+			}
+		}
+
 		el.saveKey?.addEventListener('click', () => {
 			const key = (el.key?.value || '').trim();
 			psiPost('gps_psi_save_key', { api_key: key }).then((data) => {
@@ -530,13 +546,20 @@
 				}
 				showError('');
 				if (el.key) el.key.value = '';
-				if (el.keyStatus) {
-					el.keyStatus.hidden = !data.hasKey;
-					el.keyStatus.textContent = data.hasKey ? 'ключ есть' : '';
+				applyKeyUi(!!data.hasKey);
+			});
+		});
+
+		el.deleteKey?.addEventListener('click', () => {
+			if (!window.confirm('Удалить сохранённый ключ API PSI?')) return;
+			psiPost('gps_psi_delete_key', {}).then((data) => {
+				if (!data || !data.ok) {
+					showError((data && data.error) || 'Не удалось удалить ключ.');
+					return;
 				}
-				if (el.key && data.hasKey) {
-					el.key.placeholder = '•••••••• (ключ сохранён — введите новый, чтобы заменить)';
-				}
+				showError('');
+				if (el.key) el.key.value = '';
+				applyKeyUi(false);
 			});
 		});
 
