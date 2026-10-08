@@ -179,6 +179,7 @@ AJAX (POST + sessid, право ≥ `S`): `gps_psi_save_key`, `gps_psi_start`, `
 - CSS/JS — только через Bitrix `Asset` и пути `/bitrix/css|js/tools.googlepagespeed/` (см. «Структура»).
 - На вкладках link/script — справочники (rel и defer/async) по макетам; кнопки «Добавить url» / «Применить» — классы `tools-gps-btn` + `adm-btn-save` (зелёный градиент Bitrix).
 - Кастомный CSS на `.tools-gps-filed` не должен перебивать фон `adm-btn-save` у кнопок сохранения.
+- **Всплывающая подсказка (референс):** если просят оформить текст «как подсказку во всплывашке» — образец **вкладка «Опции»**: разметка `.tools-gps-filed__hint-wrap` + кнопка `.tools-gps-filed__hint-btn--warn` (иконка «!» в круге) + `.tools-gps-filed__hint--warn` (`role="tooltip"`), стили в `css/style.css`. Не делать голый `title` / отдельный блок под полем, если имеется в виду эта всплывашка.
 
 ## Осторожности
 

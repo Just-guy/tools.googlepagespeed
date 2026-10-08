@@ -379,8 +379,8 @@ elseif ($DB->GetErrorMessage() != "")
 		foreach (Tools\GooglePageSpeed\OptionsDefinitions::forPanel($panel) as $def) {
 			$code = (string)($def['CODE_OPTION'] ?? '');
 			if ($code === '' || in_array($code, $hiddenOptionCodes, true)) {
-				continue;
-			}
+			continue;
+		}
 			if (!empty($def['PARENT'])) {
 				continue;
 			}
@@ -396,33 +396,33 @@ elseif ($DB->GetErrorMessage() != "")
 			$hint = (string)($def['HINT'] ?? '');
 
 			if (($def['OPTION_TYPE'] ?? '') === 'heading') {
-				?>
-				<tr class="tools-gps-filed tools-gps-filed--heading">
-					<td class="tools-gps-filed__active"></td>
-					<td class="tools-gps-filed__name" colspan="2">
-						<strong><?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?></strong>
-					</td>
-				</tr>
-				<?php
+									?>
+									<tr class="tools-gps-filed tools-gps-filed--heading">
+										<td class="tools-gps-filed__active"></td>
+										<td class="tools-gps-filed__name" colspan="2">
+											<strong><?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?></strong>
+										</td>
+									</tr>
+									<?php
 				foreach (Tools\GooglePageSpeed\OptionsDefinitions::getChildCodes($code) as $childCode) {
-					if (!isset($optionsByCode[$childCode])) {
-						continue;
-					}
+											if (!isset($optionsByCode[$childCode])) {
+												continue;
+											}
 					$childDef = Tools\GooglePageSpeed\OptionsDefinitions::getByCode($childCode) ?? [];
 					$childRow = $optionsByCode[$childCode]['row'];
 					if (!empty($childDef['NAME_OPTION'])) {
 						$childRow['NAME_OPTION'] = (string)$childDef['NAME_OPTION'];
 					}
-					$renderGpsOptionRow(
-						$optionsByCode[$childCode]['key'],
+											$renderGpsOptionRow(
+												$optionsByCode[$childCode]['key'],
 						$childRow,
-						$limitation,
+												$limitation,
 						true,
 						(string)($childDef['HINT'] ?? '')
-					);
-				}
-				continue;
-			}
+											);
+									}
+									continue;
+								}
 
 			$renderGpsOptionRow($keyOption, $valueOption, $limitation, false, $hint);
 		}
@@ -933,9 +933,26 @@ elseif ($DB->GetErrorMessage() != "")
 
 					<div class="tools-gps-psi__row tools-gps-psi__row--inline">
 						<div class="tools-gps-psi__field">
-							<label class="tools-gps-psi__label" for="tools-gps-psi-n">Число прогонов (N)</label>
+							<div class="tools-gps-psi__label-row">
+								<label class="tools-gps-psi__label" for="tools-gps-psi-n">Число прогонов (N)</label>
+								<span class="tools-gps-filed__hint-wrap">
+									<button
+										type="button"
+										class="tools-gps-filed__hint-btn tools-gps-filed__hint-btn--warn"
+										aria-label="Подсказка"
+										aria-describedby="tools-gps-hint-psi-n"
+									>
+										<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+											<circle cx="7" cy="7" r="7" fill="currentColor"/>
+											<path d="M7 4v3.5M7 9.5v.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+										</svg>
+									</button>
+									<span class="tools-gps-filed__hint tools-gps-filed__hint--warn" role="tooltip" id="tools-gps-hint-psi-n">
+										Эмпирически 5 прогонов достаточно для более-менее реалистичной картины разброса.
+									</span>
+								</span>
+							</div>
 							<input type="number" class="tools-gps-psi__input tools-gps-psi__input--n" id="tools-gps-psi-n" min="1" max="20" value="5">
-							<div class="tools-gps-psi__hint">Эмпирически 5 прогонов достаточно для более-менее реалистичной картины разброса.</div>
 						</div>
 						<div class="tools-gps-psi__field tools-gps-psi__field--prefix">
 							<label class="tools-gps-psi__label" for="tools-gps-psi-label-prefix">Префикс в названии</label>

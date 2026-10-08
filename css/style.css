@@ -863,8 +863,15 @@
 		letter-spacing: 0.03em;
 	}
 
-	.tools-gps-psi__field {
-		flex: 1;
+	.tools-gps-psi__label-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 6px;
+	}
+
+	.tools-gps-psi__label-row .tools-gps-psi__label {
+		margin-bottom: 0;
 	}
 
 	.tools-gps-psi__url-row {
