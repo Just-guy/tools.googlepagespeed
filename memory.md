@@ -65,6 +65,7 @@ Main::OnEndBufferContent
   │    ├─ OPTION_TYPE=regular-expression → preg_replace (вырезать Метрику/GA/GTM)
   │    └─ OPTION_TYPE=function → OptionActions::run(OPTION_ACTION)
   │         ├─ eliminateStyleSheetsThatBlockDisplay
+  │         ├─ deferGoogleFontsStylesheet (только fonts.googleapis.com link)
   │         ├─ eliminateScriptsGeneralJs  → relocateMatchingHeadScripts(jquery)
   │         ├─ eliminateScriptsAsproJs    → relocateMatchingHeadScripts(speed.min)
   │         ├─ cutYandexMetrika
@@ -84,7 +85,7 @@ Main::OnEndBufferContent
 | **SettingsProvider** | Чтение настроек + ManagedCache | `getOptions`, `getLinksCssStyles`, `getLinksJsScripts`, `clearCache` |
 | **RobotDetector** | UA Lighthouse | `isPageSpeedRobot` |
 | **HtmlBuffer** | Правки разметки для вкладок link/script | `insertAfterOpeningHead`, `addAttributeToMatchingScripts` |
-| **OptionActions** | Runtime опций | `run`, `eliminateStyleSheets…`, `eliminateScripts…`, `addLoadingLazy…`, `addDecodingAsync…`, `ensureEliminateScriptsOption`, `ensureImgAttributeOptions` |
+| **OptionActions** | Runtime опций | `run`, `eliminateStyleSheets…`, `deferGoogleFontsStylesheet`, `makeStylesheetNonBlocking` (private), `eliminateScripts…`, `addLoadingLazy…`, `addDecodingAsync…`, `ensureEliminateScriptsOption`, `ensureImgAttributeOptions` |
 | **OptionsDefinitions** | Каталог опций вкладки | `getAll`, `forPanel`, `getByCode`, `getChildCodes`, `getHiddenOptionCodes`, `toDbRow`, `getInstallRows` |
 | **ScriptDeferral** | Пресеты «отложить» (не путать с вырезать) | `reset`, `deferYandexMetrika`, `deferGoogleAnalytics`, `deferRoistat`, `deferEnvybox`, `deferCalltouch`, `deferCdnInputmask`, `injectRuntime` |
 | **DeferredPresets** | Ensure пресетов defer | `getOptionDefinitions` (из каталога), `ensureOptions` |
@@ -106,6 +107,7 @@ Main::OnEndBufferContent
 - Preload/`link` вставляются **сразу после** открывающего `<head>`, без затирания тега и атрибутов (`HtmlBuffer`).
 - `async`/`defer` вешаются на весь открывающий `<script src="...">`, не на фрагмент `src`.
 - Отложенный CSS: `media="print" onload="this.media='all'"` + `<noscript>` с исходным тегом; `media=print` не трогать повторно (`OptionActions`).
+- **v1.4.2 (2026-10-08):** опция `NONBLOCKING_GOOGLE_FONTS_CSS` в `OptionsDefinitions` — неблокирующий stylesheet только для `fonts.googleapis.com` в HTML `<link>` (`deferGoogleFontsStylesheet` / `makeStylesheetNonBlocking`). `@import` / `<style>` не трогаем. Подсказка UI — `HINT` в каталоге, вывод `.tools-gps-filed__hint--warn` (в БД HINT не пишется; колонка `b_gps_options.HINT` может существовать из миграции ORM). Строка опции — при install (Marketplace / переустановка). Не путать с «Устранить все CSS, блокирующие рендеринг».
 - Lazy / decoding: кандидат LCP = **первое осмысленное** `<img>` (не шум) — его не трогают; остальным осмысленным — атрибут. Шум: внутри `<noscript>`, пиксели счётчиков (`IMG_PIXEL_MARKERS`), нет/`data:` src, только `data-src`, `display:none` / `left:-NNNpx`, `width=1`+`height=1`. Обход через `mapImgTags` + диапазоны noscript.
 - **Img-атрибуты (v1.3.x):** `addDecodingAsyncAttributeAllTagsImg` (+ lazy). Опция авто-`fetchpriority` **удалена** (v1.3.2): эвристика «первый img» ненадёжна (пиксели, неверный LCP); ensure удаляет `ADD_FETCHPRIORITY_HIGH_FIRST_IMG` из БД. Ensure: `OptionActions::ensureImgAttributeOptions()`.
 - Опции типа `function`: реестр `OptionActions::ACTIONS` (имя → class::method); `unserialize` без объектов (`allowed_classes => false`).

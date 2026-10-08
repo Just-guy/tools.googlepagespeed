@@ -29,7 +29,8 @@ if ($POST_RIGHT < "S") {
 // подключение модуля
 Loader::includeModule($module_id);
 
-// Опции img-атрибутов и пресеты отложенной загрузки для уже установленных модулей
+// Схема опций (колонка HINT и т.п.) + миграции строк для уже установленных модулей
+Tools\GooglePageSpeed\GPSOptionsTable::exitsOrCreateTable();
 Tools\GooglePageSpeed\OptionActions::ensureImgAttributeOptions();
 Tools\GooglePageSpeed\OptionActions::ensureEliminateScriptsOption();
 Tools\GooglePageSpeed\OptionActions::ensureYandexMetrikaCutOption();

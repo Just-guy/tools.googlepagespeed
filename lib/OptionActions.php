@@ -7,6 +7,7 @@ class OptionActions
 	/** @var array<string, array{0: class-string, 1: string}> */
 	private const ACTIONS = [
 		'eliminateStyleSheetsThatBlockDisplay' => [self::class, 'eliminateStyleSheetsThatBlockDisplay'],
+		'deferGoogleFontsStylesheet' => [self::class, 'deferGoogleFontsStylesheet'],
 		'eliminateScriptsGeneralJs' => [self::class, 'eliminateScriptsGeneralJs'],
 		'eliminateScriptsAsproJs' => [self::class, 'eliminateScriptsAsproJs'],
 		'cutYandexMetrika' => [self::class, 'cutYandexMetrika'],
@@ -98,41 +99,73 @@ class OptionActions
 		$content = preg_replace_callback(
 			'/<link\b[^>]*>/i',
 			static function ($match) {
-				$tag = $match[0];
-				if (!self::linkRelIsBlockingStylesheet($tag)) {
-					return $tag;
-				}
-
-				$media = self::linkAttribute($tag, 'media');
-				if ($media !== null && strcasecmp(trim($media), 'print') === 0) {
-					return $tag;
-				}
-				if (self::linkAttribute($tag, 'onload') !== null) {
-					return $tag;
-				}
-
-				$applyMedia = 'all';
-				if ($media !== null && trim($media) !== '' && !preg_match('/^(all|screen)$/i', trim($media))) {
-					$applyMedia = trim($media);
-				}
-				$applyMedia = str_replace(['\\', "'"], ['\\\\', "\\'"], $applyMedia);
-
-				$deferred = preg_replace(
-					'/(?:^|\s)media\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s"\'=<>`]+)/i',
-					'',
-					$tag
-				);
-				$deferred = preg_replace(
-					'/\s*\/?>$/',
-					' media="print" onload="this.media=\'' . $applyMedia . '\'"$0',
-					$deferred,
-					1
-				);
-
-				return $deferred . '<noscript>' . $tag . '</noscript>';
+				return self::makeStylesheetNonBlocking($match[0]) ?? $match[0];
 			},
 			$content
 		);
+	}
+
+	/**
+	 * Только CSS API Google Fonts в HTML (link stylesheet на fonts.googleapis.com).
+	 * @import в CSS / style-блоке не трогает.
+	 */
+	public static function deferGoogleFontsStylesheet(&$content)
+	{
+		if (!is_string($content) || $content === '' || stripos($content, 'fonts.googleapis.com') === false) {
+			return;
+		}
+
+		$content = preg_replace_callback(
+			'/<link\b[^>]*>/i',
+			static function ($match) {
+				$tag = $match[0];
+				$href = self::linkAttribute($tag, 'href');
+				if ($href === null || stripos($href, 'fonts.googleapis.com') === false) {
+					return $tag;
+				}
+
+				return self::makeStylesheetNonBlocking($tag) ?? $tag;
+			},
+			$content
+		);
+	}
+
+	/**
+	 * stylesheet → media="print" onload + noscript. null — тег не менять.
+	 */
+	private static function makeStylesheetNonBlocking(string $tag): ?string
+	{
+		if (!self::linkRelIsBlockingStylesheet($tag)) {
+			return null;
+		}
+
+		$media = self::linkAttribute($tag, 'media');
+		if ($media !== null && strcasecmp(trim($media), 'print') === 0) {
+			return null;
+		}
+		if (self::linkAttribute($tag, 'onload') !== null) {
+			return null;
+		}
+
+		$applyMedia = 'all';
+		if ($media !== null && trim($media) !== '' && !preg_match('/^(all|screen)$/i', trim($media))) {
+			$applyMedia = trim($media);
+		}
+		$applyMedia = str_replace(['\\', "'"], ['\\\\', "\\'"], $applyMedia);
+
+		$deferred = preg_replace(
+			'/(?:^|\s)media\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s"\'=<>`]+)/i',
+			'',
+			$tag
+		);
+		$deferred = preg_replace(
+			'/\s*\/?>$/',
+			' media="print" onload="this.media=\'' . $applyMedia . '\'"$0',
+			$deferred,
+			1
+		);
+
+		return $deferred . '<noscript>' . $tag . '</noscript>';
 	}
 
 	/**

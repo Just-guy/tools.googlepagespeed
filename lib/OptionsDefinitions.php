@@ -41,6 +41,17 @@ class OptionsDefinitions
 			],
 			[
 				'ACTIVE' => 'N',
+				'CODE_OPTION' => 'NONBLOCKING_GOOGLE_FONTS_CSS',
+				'NAME_OPTION' => 'Неблокирующие Google Fonts (CSS)',
+				'OPTION_ACTION' => 'deferGoogleFontsStylesheet',
+				'OPTION_TYPE' => 'function',
+				'LIMITATION' => 'for-everyone',
+				'PANEL' => 'main',
+				'HINT' => 'Только HTML <link rel="stylesheet" href="https://fonts.googleapis.com/…">. '
+					. 'Подключение через @import в CSS или в <style> не обрабатывается — вынесите шрифт в <link>.',
+			],
+			[
+				'ACTIVE' => 'N',
 				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY',
 				'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
 				'OPTION_ACTION' => '',

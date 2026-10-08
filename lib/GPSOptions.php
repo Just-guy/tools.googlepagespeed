@@ -56,6 +56,13 @@ class GPSOptionsTable extends Entity\DataManager
 					'size' => 50
 				]
 			),
+			new Entity\TextField(
+				'HINT',
+				[
+					'nullable' => true,
+					'default_value' => '',
+				]
+			),
 		];
 	}
 
@@ -68,9 +75,22 @@ class GPSOptionsTable extends Entity\DataManager
 
 	public static function exitsOrCreateTable()
 	{
-		if (!self::getEntity()->getConnection()->isTableExists(self::getTableName())) {
+		$connection = self::getEntity()->getConnection();
+		$table = self::getTableName();
+
+		if (!$connection->isTableExists($table)) {
 			self::getEntity()->createDbTable();
+			return true;
 		}
+
+		$fields = $connection->getTableFields($table);
+		if (!isset($fields['HINT'])) {
+			$helper = $connection->getSqlHelper();
+			$connection->queryExecute(
+				'ALTER TABLE ' . $helper->quote($table) . ' ADD ' . $helper->quote('HINT') . ' text NULL'
+			);
+		}
+
 		return true;
 	}
 
