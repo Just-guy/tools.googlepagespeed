@@ -47,8 +47,8 @@ class OptionsDefinitions
 				'OPTION_TYPE' => 'function',
 				'LIMITATION' => 'for-everyone',
 				'PANEL' => 'main',
-				'HINT' => 'Только HTML <link rel="stylesheet" href="https://fonts.googleapis.com/…">. '
-					. 'Подключение через @import в CSS или в <style> не обрабатывается — вынесите шрифт в <link>.',
+				'HINT' => 'Только HTML <link rel="stylesheet" href="https://fonts.googleapis.com/…">.
+Подключение через @import в CSS или в <style> не обрабатывается — вынесите шрифт в <link>',
 			],
 			[
 				'ACTIVE' => 'N',
