@@ -172,6 +172,18 @@ class Tools_googlepagespeed extends CModule
 			true,
 			true
 		);
+		CopyDirFiles(
+			__DIR__ . '/../css',
+			Application::getDocumentRoot() . '/bitrix/css/tools.googlepagespeed',
+			true,
+			true
+		);
+		CopyDirFiles(
+			__DIR__ . '/../js',
+			Application::getDocumentRoot() . '/bitrix/js/tools.googlepagespeed',
+			true,
+			true
+		);
 
 		return true;
 	}
@@ -214,6 +226,8 @@ class Tools_googlepagespeed extends CModule
 	public function UnInstallFiles()
 	{
 		@unlink(Application::getDocumentRoot() . '/bitrix/admin/tools.googlepagespeed_options.php');
+		DeleteDirFilesEx('/bitrix/css/tools.googlepagespeed');
+		DeleteDirFilesEx('/bitrix/js/tools.googlepagespeed');
 
 		//DeleteDirFilesEx("/bitrix/components/" . $this->MODULE_ID);
 
