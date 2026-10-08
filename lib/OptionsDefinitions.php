@@ -42,7 +42,7 @@ class OptionsDefinitions
 			[
 				'ACTIVE' => 'N',
 				'CODE_OPTION' => 'NONBLOCKING_GOOGLE_FONTS_CSS',
-				'NAME_OPTION' => 'Неблокирующие Google Fonts (CSS)',
+				'NAME_OPTION' => 'Убрать блокировку рендера у CSS Google Fonts',
 				'OPTION_ACTION' => 'deferGoogleFontsStylesheet',
 				'OPTION_TYPE' => 'function',
 				'LIMITATION' => 'for-everyone',
