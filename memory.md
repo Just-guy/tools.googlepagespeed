@@ -19,7 +19,7 @@
 
 Это дополнение поверх шаблона, не замена нормальной оптимизации. После установки всё выключено — работает только после включения опций и «Применить».
 
-Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.3.5`).
+Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.4.0`).
 
 ## Структура
 
@@ -42,6 +42,7 @@
 | `admin/tools.googlepagespeed_options.php` | Админка: Опции / Тэг link / Тэг script / Разброс PSI (+ AJAX) |
 | `admin/menu.php` | Пункт меню в «Настройки» |
 | `css/style.css`, `js/script.js` | Статика админки (источник в модуле) |
+| `lib/Psi/*` | PSI variance: Settings, ApiClient, VarianceStorage, VarianceAggregator, AdminAjax |
 | `install/` | Установка / удаление; копия admin-stub + css/js в `/bitrix/` |
 
 Админка: **Настройки → Инструменты для Google PageSpeed → Настройки**.
@@ -110,6 +111,19 @@ Main::OnEndBufferContent
 - Открывающие теги PHP — только `<?php` (короткие `<?` убраны).
 - **Пресеты отложенной загрузки (вариант E, v1.1.0):** `ScriptDeferral` + опции `deferYandexMetrika` / `deferGoogleAnalytics` (`deferJivoChat` — закомментирован). Stub (ym/gtag) + runtime перед `</body>`: idle или первое взаимодействие. Строки в БД: `DeferredPresets::ensureOptions()` при открытии админки. Не путать с опциями «Вырезать…». Подробная карта вариантов A–F — раздел ниже «Отложенная загрузка (варианты)».
 - **Скан скриптов страницы (v1.2.0):** вкладка «Тэг script» — HTTP GET публичного URL → список `<script src>`. Реестр в `ScriptScanCatalog`: **hide** только в `getHideRules()` (якоря на `/bitrix/js|cache|components|panel|themes|tools|resources|admin|modules/`, без `/bitrix/templates/`; вложенные `/local/.../bitrix/...` не матчятся). Метрика/GA/GTM — analytics. **presets** / **getScanUrlPresets**. Уже с `async`/`defer` скрываются. **Несколько URL:** запятая / `;` / перевод строки (макс. 5). **Loopback:** `localhost`/`127.0.0.1` для HTTP-запроса заменяются на `SERVER_NAME` сайта Bitrix (если он не loopback) — без привязки к Docker; пресеты URL берут `PageScriptScanner::getPublicOrigin()`. **publicPart:** свои пути — полный path без домена; внешние — `host+path`.
+- **Разброс PSI (v1.4.0):** вкладка «Разброс PSI» — серия lab Performance через PageSpeed Insights API. JS оркестрирует шаги; PHP — один `runPagespeed` за AJAX. Стоп = режим A (текущий запрос дожимается, очередь не продолжается). Артефакты: `/upload/tools.googlepagespeed/variance/{stamp}_{host}/` (`meta.json`, `psi-{strategy}-{n}.json`, `summary.json` / `.html` / `.md`). Ключ API — `Option` модуля (`psi_api_key`), в ответах клиенту не светить. Пауза между прогонами ~45 с на клиенте. Ориентир «до/после» — **медиана** score.
+
+### PSI variance — классы и AJAX
+
+| Класс | Файл | Роль |
+|-------|------|------|
+| `Psi\Settings` | `lib/Psi/Settings.php` | get/set ключа API |
+| `Psi\ApiClient` | `lib/Psi/ApiClient.php` | HttpClient → PSI v5; timeout 180 с; extractMetrics |
+| `Psi\VarianceStorage` | `lib/Psi/VarianceStorage.php` | create/list/get/delete run; probe URL из сайта |
+| `Psi\VarianceAggregator` | `lib/Psi/VarianceAggregator.php` | min/median/max; `toHtml` / `toMarkdown` |
+| `Psi\AdminAjax` | `lib/Psi/AdminAjax.php` | роутер `gps_psi_*` |
+
+AJAX (POST + sessid, право ≥ `S`): `gps_psi_save_key`, `gps_psi_start`, `gps_psi_run_one`, `gps_psi_finalize`, `gps_psi_list_runs`, `gps_psi_get_run`, `gps_psi_delete_run`, `gps_psi_probe_url`.
 
 ## Код (стиль)
 
@@ -171,6 +185,7 @@ Main::OnEndBufferContent
 - **v1.3.6 (2026-10-04):** вкладка «Опции» — две колонки (основные / «Отложить скрипты»). Пресеты: Метрика, GA, Roistat, Envybox, Calltouch, Inputmask CDN. `ScriptDeferral` грузит и CSS (Envybox). Calltouch-init вынесен в `footer.php` (из `custom.js`).
 - **v1.3.7 (2026-10-04):** опции «Вырезать» Метрика/GA/GTM скрыты и принудительно ACTIVE=N; добавлен `DEFER_GOOGLE_TAG_MANAGER`.
 - **v1.3.4 (2026-10-04):** UI: «Устранить скрипты…» — **heading** без select; подпункты **Общий JS** (jquery) и **Aspro Js** (`speed.min.js`), каждый со своим ACTIVE/LIMITATION. Вставка сразу после `<body>` в блок `<!--gps-rb-scripts-->` (раньше перенос перед core.js ломал mid-body `CheckTopMenuDotted()`). `OPTION_TYPE=heading` в админке без чекбокса/select.
+- **v1.4.0 (2026-10-08):** вкладка «Разброс PSI» (`lib/Psi/*`); статика админки через `SetAdditionalCSS` / `AddHeadScript` (пути `/bitrix/css|js/tools.googlepagespeed/`); stub `/bitrix/admin/…` — сначала `bitrix/modules`, иначе `local/modules`.
 - Модуль правит уже собранный HTML regex’ами — хрупко при нестандартной разметке.
 
 ## Возможные доработки
