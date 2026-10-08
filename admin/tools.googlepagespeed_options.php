@@ -59,6 +59,23 @@ if (
 	die();
 }
 
+// AJAX: разброс PSI (variance)
+if (
+	$request->isPost()
+	&& strpos((string)$request->getPost('action'), 'gps_psi_') === 0
+	&& check_bitrix_sessid()
+) {
+	global $APPLICATION;
+
+	$APPLICATION->RestartBuffer();
+	header('Content-Type: application/json; charset=UTF-8');
+
+	echo \Bitrix\Main\Web\Json::encode(
+		Tools\GooglePageSpeed\Psi\AdminAjax::handle($request)
+	);
+	die();
+}
+
 $aTabs = [
 	[
 		"DIV"   => "edit1",
