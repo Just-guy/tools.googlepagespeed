@@ -43,6 +43,7 @@
 | `admin/tools.googlepagespeed_options.php` | Админка: Опции / Тэг link / Тэг script / Разброс PSI (+ AJAX) |
 | `admin/menu.php` | Пункт меню в «Настройки» |
 | `css/style.css`, `js/script.js` | Статика админки (источник в модуле) |
+| `js/vendor/apexcharts.min.js` | ApexCharts 4.7.0 (графики вкладки «Разброс PSI») |
 | `lib/Psi/*` | PSI variance: Settings, ApiClient, VarianceStorage, VarianceAggregator, AdminAjax |
 | `install/` | Установка / удаление; копия admin-stub + css/js в `/bitrix/` |
 
@@ -117,6 +118,7 @@ Main::OnEndBufferContent
 - **Пресеты отложенной загрузки (вариант E, v1.1.0):** `ScriptDeferral` + опции `deferYandexMetrika` / `deferGoogleAnalytics` (`deferJivoChat` — закомментирован). Stub (ym/gtag) + runtime перед `</body>`: idle или первое взаимодействие. Строки в БД: `DeferredPresets::ensureOptions()` при открытии админки. Не путать с опциями «Вырезать…». Подробная карта вариантов A–F — раздел ниже «Отложенная загрузка (варианты)».
 - **Скан скриптов страницы (v1.2.0):** вкладка «Тэг script» — HTTP GET публичного URL → список `<script src>`. Реестр в `ScriptScanCatalog`: **hide** только в `getHideRules()` (якоря на `/bitrix/js|cache|components|panel|themes|tools|resources|admin|modules/`, без `/bitrix/templates/`; вложенные `/local/.../bitrix/...` не матчятся). Метрика/GA/GTM — analytics. **presets** / **getScanUrlPresets**. Уже с `async`/`defer` скрываются. **Несколько URL:** запятая / `;` / перевод строки (макс. 5). **Loopback:** `localhost`/`127.0.0.1` для HTTP-запроса заменяются на `SERVER_NAME` сайта Bitrix (если он не loopback) — без привязки к Docker; пресеты URL берут `PageScriptScanner::getPublicOrigin()`. **publicPart:** свои пути — полный path без домена; внешние — `host+path`.
 - **Разброс PSI (v1.4.0):** вкладка «Разброс PSI» — серия lab Performance через PageSpeed Insights API. JS оркестрирует шаги; PHP — один `runPagespeed` за AJAX. Стоп = режим A (текущий запрос дожимается; пауза 45 с прерывается сразу). Артефакты: `/upload/tools.googlepagespeed/variance/{stamp}_{host}/` (`meta.json`, `psi-{strategy}-{n}.json`, `summary.json` / `.html` / `.md`). Ключ API — `Option` модуля (`psi_api_key`), в ответах клиенту не светить. Пауза между прогонами ~45 с на клиенте. Опциональный **префикс** (`labelPrefix` в meta) — в начале названия серии в dropdown. Ориентир «до/после» — **медиана** score.
+- **Графики сравнения серий (2026-10-08):** справа от «Результаты серий» — ApexCharts (`js/vendor/apexcharts.min.js` → `/bitrix/js/…/vendor/`, sync по `filemtime`). Ось X — **все сохранённые серии** (не выбранная в dropdown). Performance score и FCP/LCP/TBT/CLS для Mobile/Desktop: у каждой точки **3 бара (min / max / размах)** + **линия медианы**. AJAX `gps_psi_chart_data` → `VarianceStorage::listChartSeries()`. Отчёт слева по-прежнему от выбранной серии.
 
 ### PSI variance — классы и AJAX
 

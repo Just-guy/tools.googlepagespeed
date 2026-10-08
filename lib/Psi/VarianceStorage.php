@@ -263,6 +263,136 @@ class VarianceStorage
 		return $result;
 	}
 
+	/**
+	 * Данные всех серий для графиков сравнения (хронологически: старые слева).
+	 *
+	 * @return list<array{
+	 *   id: string,
+	 *   label: string,
+	 *   shortLabel: string,
+	 *   byStrategy: array<string, array{
+	 *     score: array{min: int, median: int, max: int}|null,
+	 *     FCP: array{min: ?float, median: ?float, max: ?float}|null,
+	 *     LCP: array{min: ?float, median: ?float, max: ?float}|null,
+	 *     TBT: array{min: ?float, median: ?float, max: ?float}|null,
+	 *     CLS: array{min: ?float, median: ?float, max: ?float}|null
+	 *   }>
+	 * }>
+	 */
+	public static function listChartSeries(int $limit = self::LIST_LIMIT): array
+	{
+		$runs = self::listRuns($limit);
+		$usedLabels = [];
+		$out = [];
+
+		foreach ($runs as $run) {
+			$id = (string)($run['id'] ?? '');
+			if ($id === '') {
+				continue;
+			}
+			$meta = self::readMeta($id);
+			$summary = self::readSummary($id);
+			if ($summary === null && is_array($meta) && !empty($meta['items'])) {
+				$summary = VarianceAggregator::fromMeta($meta);
+			}
+			if (!is_array($summary)) {
+				continue;
+			}
+			$byStrategyRaw = is_array($summary['byStrategy'] ?? null) ? $summary['byStrategy'] : [];
+			$byStrategy = [];
+			foreach ($byStrategyRaw as $strategy => $block) {
+				if (!is_array($block)) {
+					continue;
+				}
+				$byStrategy[(string)$strategy] = [
+					'score' => is_array($block['score'] ?? null) ? [
+						'min' => (int)$block['score']['min'],
+						'median' => (int)$block['score']['median'],
+						'max' => (int)$block['score']['max'],
+					] : null,
+					'FCP' => self::chartMetricBlock($block['FCP'] ?? null),
+					'LCP' => self::chartMetricBlock($block['LCP'] ?? null),
+					'TBT' => self::chartMetricBlock($block['TBT'] ?? null),
+					'CLS' => self::chartMetricBlock($block['CLS'] ?? null),
+				];
+			}
+			if ($byStrategy === []) {
+				continue;
+			}
+
+			$short = self::formatChartShortLabel(is_array($meta) ? $meta : [], (string)$run['label'], $usedLabels);
+			$usedLabels[$short] = true;
+
+			$out[] = [
+				'id' => $id,
+				'label' => (string)$run['label'],
+				'shortLabel' => $short,
+				'byStrategy' => $byStrategy,
+			];
+		}
+
+		return array_reverse($out);
+	}
+
+	/**
+	 * @param mixed $block
+	 * @return array{min: ?float, median: ?float, max: ?float}|null
+	 */
+	private static function chartMetricBlock($block): ?array
+	{
+		if (!is_array($block)) {
+			return null;
+		}
+		$min = $block['min'] ?? null;
+		$median = $block['median'] ?? null;
+		$max = $block['max'] ?? null;
+		if ($median === null && $min === null && $max === null) {
+			return null;
+		}
+		return [
+			'min' => $min === null || $min === '' ? null : (float)$min,
+			'median' => $median === null || $median === '' ? null : (float)$median,
+			'max' => $max === null || $max === '' ? null : (float)$max,
+		];
+	}
+
+	/**
+	 * @param array<string, mixed> $meta
+	 * @param array<string, true> $usedLabels
+	 */
+	private static function formatChartShortLabel(array $meta, string $fullLabel, array $usedLabels): string
+	{
+		$prefix = self::normalizeLabelPrefix((string)($meta['labelPrefix'] ?? ''));
+		$startedAt = (string)($meta['startedAt'] ?? '');
+		$datePart = $startedAt !== '' ? str_replace('T', ' ', substr($startedAt, 0, 16)) : '';
+
+		$base = $prefix !== '' ? $prefix : ($datePart !== '' ? $datePart : $fullLabel);
+		if (function_exists('mb_substr')) {
+			$base = mb_substr($base, 0, 28);
+		} else {
+			$base = substr($base, 0, 28);
+		}
+		$base = trim($base);
+		if ($base === '') {
+			$base = 'серия';
+		}
+
+		if (!isset($usedLabels[$base])) {
+			return $base;
+		}
+		if ($datePart !== '' && $prefix !== '') {
+			$withDate = $prefix . ' ' . substr($datePart, 5, 11);
+			if (!isset($usedLabels[$withDate])) {
+				return $withDate;
+			}
+		}
+		$n = 2;
+		while (isset($usedLabels[$base . ' (' . $n . ')'])) {
+			$n++;
+		}
+		return $base . ' (' . $n . ')';
+	}
+
 	public static function deleteRun(string $runId): bool
 	{
 		$path = self::getRunPath($runId);

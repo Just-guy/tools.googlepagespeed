@@ -953,7 +953,6 @@
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
-	max-width: 960px;
 }
 
 .tools-gps-psi__panel {
@@ -961,6 +960,104 @@
 	border: 1px solid #e2e8f0;
 	border-radius: 8px;
 	padding: 16px 18px 18px;
+}
+
+.tools-gps-psi__bottom {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 16px;
+}
+
+.tools-gps-psi__panel.tools-gps-psi__panel--history {
+	flex: 1 1 420px;
+	max-width: 500px;
+	min-width: 0;
+}
+
+.tools-gps-psi__panel.tools-gps-psi__panel--charts {
+	flex: 1 1 480px;
+	min-width: 0;
+}
+
+.tools-gps-psi-charts__empty {
+	margin: 0;
+	color: #94a3b8;
+	font-size: 13px;
+}
+
+.tools-gps-psi-charts__section {
+	margin-bottom: 18px;
+}
+
+.tools-gps-psi-charts__section:last-child {
+	margin-bottom: 0;
+}
+
+.tools-gps-psi-charts__section-title {
+	margin: 0 0 10px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #0f172a;
+}
+
+.tools-gps-psi-charts__device {
+	margin-bottom: 14px;
+}
+
+.tools-gps-psi-charts__device:last-child {
+	margin-bottom: 0;
+}
+
+.tools-gps-psi-charts__label {
+	font-size: 12px;
+	font-weight: 600;
+	color: #475569;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	margin-bottom: 6px;
+}
+
+.tools-gps-psi-charts__metric {
+	font-size: 12px;
+	font-weight: 600;
+	color: #64748b;
+	margin-bottom: 2px;
+}
+
+.tools-gps-psi-charts__grid {
+	display: grid;
+	gap: 10px 12px;
+}
+
+.tools-gps-psi-charts__grid--2 {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tools-gps-psi-charts__item {
+	min-width: 0;
+}
+
+.tools-gps-psi-charts__canvas {
+	min-height: 200px;
+}
+
+.tools-gps-psi-charts__item--empty {
+	display: none;
+}
+
+.tools-gps-psi-charts__tooltip {
+	padding: 8px 10px;
+	font-size: 12px;
+	line-height: 1.45;
+	color: #334155;
+}
+
+.tools-gps-psi-charts__tooltip-title {
+	font-weight: 700;
+	color: #0f172a;
+	margin-bottom: 4px;
+	max-width: 260px;
 }
 
 .tools-gps-psi__title {
@@ -1219,4 +1316,10 @@
 
 .tools-gps-psi-report__device:last-child {
 	margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+	.tools-gps-psi-charts__grid--2 {
+		grid-template-columns: 1fr;
+	}
 }

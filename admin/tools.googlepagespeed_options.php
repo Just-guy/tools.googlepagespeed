@@ -274,10 +274,13 @@ $APPLICATION->SetTitle('Настройки');
 // (внутри → Asset). Голый Asset::addCss в админский <head> не попадает.
 $gpsCssPath = '/bitrix/css/tools.googlepagespeed/style.css';
 $gpsJsPath = '/bitrix/js/tools.googlepagespeed/script.js';
+$gpsApexPath = '/bitrix/js/tools.googlepagespeed/vendor/apexcharts.min.js';
 $gpsCssFs = $_SERVER['DOCUMENT_ROOT'] . $gpsCssPath;
 $gpsJsFs = $_SERVER['DOCUMENT_ROOT'] . $gpsJsPath;
+$gpsApexFs = $_SERVER['DOCUMENT_ROOT'] . $gpsApexPath;
 $gpsModuleCss = $_SERVER['DOCUMENT_ROOT'] . '/local/modules/tools.googlepagespeed/css/style.css';
 $gpsModuleJs = $_SERVER['DOCUMENT_ROOT'] . '/local/modules/tools.googlepagespeed/js/script.js';
+$gpsModuleApex = $_SERVER['DOCUMENT_ROOT'] . '/local/modules/tools.googlepagespeed/js/vendor/apexcharts.min.js';
 if (is_file($gpsModuleCss) && (!is_file($gpsCssFs) || filemtime($gpsModuleCss) > (int)@filemtime($gpsCssFs))) {
 	CheckDirPath(dirname($gpsCssFs) . '/');
 	@copy($gpsModuleCss, $gpsCssFs);
@@ -285,6 +288,10 @@ if (is_file($gpsModuleCss) && (!is_file($gpsCssFs) || filemtime($gpsModuleCss) >
 if (is_file($gpsModuleJs) && (!is_file($gpsJsFs) || filemtime($gpsModuleJs) > (int)@filemtime($gpsJsFs))) {
 	CheckDirPath(dirname($gpsJsFs) . '/');
 	@copy($gpsModuleJs, $gpsJsFs);
+}
+if (is_file($gpsModuleApex) && (!is_file($gpsApexFs) || filemtime($gpsModuleApex) > (int)@filemtime($gpsApexFs))) {
+	CheckDirPath(dirname($gpsApexFs) . '/');
+	@copy($gpsModuleApex, $gpsApexFs);
 }
 
 $APPLICATION->SetAdditionalCSS($gpsCssPath);
@@ -298,6 +305,9 @@ $APPLICATION->AddHeadString(
 	]) . ';</script>',
 	true
 );
+if (is_file($gpsApexFs) || is_file($gpsModuleApex)) {
+	$APPLICATION->AddHeadScript($gpsApexPath);
+}
 $APPLICATION->AddHeadScript($gpsJsPath);
 
 require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_after.php");
@@ -988,17 +998,86 @@ elseif ($DB->GetErrorMessage() != "")
 					<div class="tools-gps-psi__error" id="tools-gps-psi-error" hidden></div>
 				</div>
 
-				<div class="tools-gps-psi__panel tools-gps-psi__panel--history">
-					<div class="tools-gps-psi__title">Результаты серий</div>
-					<div class="tools-gps-psi__history-controls">
-						<select class="tools-gps-psi__select" id="tools-gps-psi-runs" aria-label="Серия прогонов">
-							<option value="">— нет сохранённых серий —</option>
-						</select>
-						<input type="button" class="adm-btn" id="tools-gps-psi-refresh" value="Обновить список">
-						<input type="button" class="adm-btn adm-btn-delete" id="tools-gps-psi-delete" value="Удалить серию" disabled>
+				<div class="tools-gps-psi__bottom">
+					<div class="tools-gps-psi__panel tools-gps-psi__panel--history">
+						<div class="tools-gps-psi__title">Результаты серий</div>
+						<div class="tools-gps-psi__history-controls">
+							<select class="tools-gps-psi__select" id="tools-gps-psi-runs" aria-label="Серия прогонов">
+								<option value="">— нет сохранённых серий —</option>
+							</select>
+							<input type="button" class="adm-btn" id="tools-gps-psi-refresh" value="Обновить список">
+							<input type="button" class="adm-btn adm-btn-delete" id="tools-gps-psi-delete" value="Удалить серию" disabled>
+						</div>
+						<div class="tools-gps-psi__report" id="tools-gps-psi-report">
+							<p class="tools-gps-psi-report__empty">Выберите серию в списке или запустите новый замер.</p>
+						</div>
 					</div>
-					<div class="tools-gps-psi__report" id="tools-gps-psi-report">
-						<p class="tools-gps-psi-report__empty">Выберите серию в списке или запустите новый замер.</p>
+
+					<div class="tools-gps-psi__panel tools-gps-psi__panel--charts">
+						<div class="tools-gps-psi__title">Графики</div>
+						<div class="tools-gps-psi-charts" id="tools-gps-psi-charts">
+							<p class="tools-gps-psi-charts__empty" id="tools-gps-psi-charts-empty">Нет сохранённых серий для графиков.</p>
+							<div class="tools-gps-psi-charts__body" id="tools-gps-psi-charts-body" hidden>
+								<section class="tools-gps-psi-charts__section">
+									<h4 class="tools-gps-psi-charts__section-title">Performance score</h4>
+									<div class="tools-gps-psi-charts__grid tools-gps-psi-charts__grid--2">
+										<div class="tools-gps-psi-charts__item" data-strategy="mobile" data-kind="score">
+											<div class="tools-gps-psi-charts__label">Mobile</div>
+											<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-score-mobile"></div>
+										</div>
+										<div class="tools-gps-psi-charts__item" data-strategy="desktop" data-kind="score">
+											<div class="tools-gps-psi-charts__label">Desktop</div>
+											<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-score-desktop"></div>
+										</div>
+									</div>
+								</section>
+								<section class="tools-gps-psi-charts__section">
+									<h4 class="tools-gps-psi-charts__section-title">Метрики (min / median / max)</h4>
+									<div class="tools-gps-psi-charts__device" data-strategy="mobile">
+										<div class="tools-gps-psi-charts__label">Mobile</div>
+										<div class="tools-gps-psi-charts__grid tools-gps-psi-charts__grid--2">
+											<div class="tools-gps-psi-charts__item" data-metric="FCP">
+												<div class="tools-gps-psi-charts__metric">FCP</div>
+												<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-fcp-mobile"></div>
+											</div>
+											<div class="tools-gps-psi-charts__item" data-metric="LCP">
+												<div class="tools-gps-psi-charts__metric">LCP</div>
+												<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-lcp-mobile"></div>
+											</div>
+											<div class="tools-gps-psi-charts__item" data-metric="TBT">
+												<div class="tools-gps-psi-charts__metric">TBT</div>
+												<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-tbt-mobile"></div>
+											</div>
+											<div class="tools-gps-psi-charts__item" data-metric="CLS">
+												<div class="tools-gps-psi-charts__metric">CLS</div>
+												<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-cls-mobile"></div>
+											</div>
+										</div>
+									</div>
+									<div class="tools-gps-psi-charts__device" data-strategy="desktop">
+										<div class="tools-gps-psi-charts__label">Desktop</div>
+										<div class="tools-gps-psi-charts__grid tools-gps-psi-charts__grid--2">
+											<div class="tools-gps-psi-charts__item" data-metric="FCP">
+												<div class="tools-gps-psi-charts__metric">FCP</div>
+												<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-fcp-desktop"></div>
+											</div>
+											<div class="tools-gps-psi-charts__item" data-metric="LCP">
+												<div class="tools-gps-psi-charts__metric">LCP</div>
+												<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-lcp-desktop"></div>
+											</div>
+											<div class="tools-gps-psi-charts__item" data-metric="TBT">
+												<div class="tools-gps-psi-charts__metric">TBT</div>
+												<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-tbt-desktop"></div>
+											</div>
+											<div class="tools-gps-psi-charts__item" data-metric="CLS">
+												<div class="tools-gps-psi-charts__metric">CLS</div>
+												<div class="tools-gps-psi-charts__canvas" id="tools-gps-psi-chart-cls-desktop"></div>
+											</div>
+										</div>
+									</div>
+								</section>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

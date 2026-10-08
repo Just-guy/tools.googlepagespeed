@@ -368,7 +368,11 @@
 			refresh: document.getElementById('tools-gps-psi-refresh'),
 			deleteBtn: document.getElementById('tools-gps-psi-delete'),
 			report: document.getElementById('tools-gps-psi-report'),
+			chartsEmpty: document.getElementById('tools-gps-psi-charts-empty'),
+			chartsBody: document.getElementById('tools-gps-psi-charts-body'),
 		};
+
+		let psiCharts = [];
 
 		function psiPost(action, fields) {
 			const body = new FormData();
@@ -477,6 +481,253 @@
 			}
 		}
 
+		function destroyPsiCharts() {
+			psiCharts.forEach((chart) => {
+				try {
+					chart.destroy();
+				} catch (e) { /* ignore */ }
+			});
+			psiCharts = [];
+		}
+
+		function clearPsiCharts() {
+			destroyPsiCharts();
+			if (el.chartsEmpty) {
+				el.chartsEmpty.hidden = false;
+				el.chartsEmpty.textContent = 'Нет сохранённых серий для графиков.';
+			}
+			if (el.chartsBody) el.chartsBody.hidden = true;
+			document.querySelectorAll('.tools-gps-psi-charts__item').forEach((item) => {
+				item.classList.remove('tools-gps-psi-charts__item--empty');
+			});
+			document.querySelectorAll('.tools-gps-psi-charts__canvas').forEach((node) => {
+				node.innerHTML = '';
+			});
+			document.querySelectorAll('.tools-gps-psi-charts__device').forEach((node) => {
+				node.hidden = false;
+			});
+		}
+
+		function formatPsiMetric(metric, value) {
+			if (value === null || value === undefined || Number.isNaN(Number(value))) {
+				return '—';
+			}
+			const num = Number(value);
+			if (metric === 'CLS') {
+				return num.toFixed(3);
+			}
+			if (num >= 1000) {
+				return (num / 1000).toFixed(1).replace(/\.0$/, '') + ' s';
+			}
+			return Math.round(num) + ' ms';
+		}
+
+		function renderSeriesCompareChart(canvas, points, options) {
+			if (!canvas || typeof ApexCharts === 'undefined' || !points.length) {
+				return null;
+			}
+			const opts = options || {};
+			const categories = points.map((p) => p.x);
+			const minData = points.map((p) => p.min);
+			const maxData = points.map((p) => p.max);
+			const rangeData = points.map((p) => p.range);
+			const medianData = points.map((p) => p.median);
+			const chart = new ApexCharts(canvas, {
+				chart: {
+					type: 'line',
+					height: opts.height || 220,
+					toolbar: { show: false },
+					fontFamily: 'inherit',
+					zoom: { enabled: false },
+				},
+				series: [
+					{ name: 'min', type: 'column', data: minData },
+					{ name: 'max', type: 'column', data: maxData },
+					{ name: 'размах', type: 'column', data: rangeData },
+					{ name: 'Медиана', type: 'line', data: medianData },
+				],
+				colors: ['#93c5fd', '#60a5fa', '#cbd5e1', '#1d4ed8'],
+				stroke: { width: [0, 0, 0, 3], curve: 'straight' },
+				markers: { size: [0, 0, 0, 5], strokeWidth: 0 },
+				plotOptions: {
+					bar: {
+						horizontal: false,
+						columnWidth: points.length > 6 ? '70%' : '55%',
+						borderRadius: 2,
+					},
+				},
+				dataLabels: { enabled: false },
+				xaxis: {
+					categories: categories,
+					labels: {
+						rotate: points.length > 4 ? -35 : 0,
+						rotateAlways: points.length > 4,
+						hideOverlappingLabels: false,
+						style: { fontSize: '10px', colors: '#64748b' },
+						trim: true,
+						maxHeight: 60,
+					},
+				},
+				yaxis: {
+					min: opts.yMin,
+					max: opts.yMax,
+					decimalsInFloat: opts.decimals,
+					labels: {
+						style: { fontSize: '11px', colors: '#64748b' },
+						formatter: opts.yFormatter || function (v) { return v; },
+					},
+				},
+				tooltip: {
+					shared: true,
+					intersect: false,
+					custom: function (ctx) {
+						const idx = ctx.dataPointIndex;
+						const p = points[idx];
+						if (!p) return '';
+						const fmt = opts.tooltipFormatter || function (v) { return v; };
+						return '<div class="tools-gps-psi-charts__tooltip">'
+							+ '<div class="tools-gps-psi-charts__tooltip-title">' + (p.fullLabel || p.x) + '</div>'
+							+ '<div>min: <b>' + fmt(p.min) + '</b></div>'
+							+ '<div>median: <b>' + fmt(p.median) + '</b></div>'
+							+ '<div>max: <b>' + fmt(p.max) + '</b></div>'
+							+ '<div>размах: <b>' + fmt(p.range) + '</b></div>'
+							+ '</div>';
+					},
+				},
+				legend: {
+					position: 'top',
+					horizontalAlign: 'left',
+					fontSize: '12px',
+					markers: { width: 10, height: 10 },
+				},
+				grid: { borderColor: '#e2e8f0', strokeDashArray: 3 },
+			});
+			chart.render();
+			return chart;
+		}
+
+		function collectStrategyPoints(seriesList, strategy, metricKey) {
+			const points = [];
+			(seriesList || []).forEach((item) => {
+				const block = item && item.byStrategy ? item.byStrategy[strategy] : null;
+				if (!block) return;
+				const stats = metricKey === 'score' ? block.score : block[metricKey];
+				if (!stats || stats.median === null || stats.median === undefined) return;
+				const min = Number(stats.min);
+				const median = Number(stats.median);
+				const max = Number(stats.max);
+				if (Number.isNaN(median)) return;
+				const safeMin = Number.isNaN(min) ? median : min;
+				const safeMax = Number.isNaN(max) ? median : max;
+				points.push({
+					x: item.shortLabel || item.label || item.id,
+					fullLabel: item.label || item.shortLabel || item.id,
+					min: safeMin,
+					median: median,
+					max: safeMax,
+					range: Math.max(0, safeMax - safeMin),
+				});
+			});
+			return points;
+		}
+
+		function showPsiCharts(seriesList) {
+			destroyPsiCharts();
+			if (typeof ApexCharts === 'undefined') {
+				clearPsiCharts();
+				if (el.chartsEmpty) {
+					el.chartsEmpty.hidden = false;
+					el.chartsEmpty.textContent = 'Библиотека ApexCharts не загружена.';
+				}
+				return;
+			}
+			const list = Array.isArray(seriesList) ? seriesList : [];
+			if (!list.length) {
+				clearPsiCharts();
+				return;
+			}
+
+			if (el.chartsEmpty) el.chartsEmpty.hidden = true;
+			if (el.chartsBody) el.chartsBody.hidden = false;
+
+			['mobile', 'desktop'].forEach((strategy) => {
+				const scorePoints = collectStrategyPoints(list, strategy, 'score');
+				const scoreCanvas = document.getElementById('tools-gps-psi-chart-score-' + strategy);
+				const scoreItem = scoreCanvas ? scoreCanvas.closest('.tools-gps-psi-charts__item') : null;
+				const deviceWrap = document.querySelector('.tools-gps-psi-charts__device[data-strategy="' + strategy + '"]');
+
+				if (!scorePoints.length) {
+					if (scoreItem) scoreItem.classList.add('tools-gps-psi-charts__item--empty');
+				} else {
+					if (scoreItem) scoreItem.classList.remove('tools-gps-psi-charts__item--empty');
+					const chart = renderSeriesCompareChart(scoreCanvas, scorePoints, {
+						height: 240,
+						yMin: 0,
+						yMax: 100,
+						decimals: 0,
+						yFormatter: function (v) { return Math.round(v); },
+						tooltipFormatter: function (v) { return Math.round(v); },
+					});
+					if (chart) psiCharts.push(chart);
+				}
+
+				let metricsVisible = 0;
+				['FCP', 'LCP', 'TBT', 'CLS'].forEach((metric) => {
+					const points = collectStrategyPoints(list, strategy, metric);
+					const canvas = document.getElementById(
+						'tools-gps-psi-chart-' + metric.toLowerCase() + '-' + strategy
+					);
+					const item = canvas ? canvas.closest('.tools-gps-psi-charts__item') : null;
+					if (!points.length) {
+						if (item) item.classList.add('tools-gps-psi-charts__item--empty');
+						return;
+					}
+					if (item) item.classList.remove('tools-gps-psi-charts__item--empty');
+					metricsVisible++;
+					const chart = renderSeriesCompareChart(canvas, points, {
+						height: 200,
+						yMin: 0,
+						decimals: metric === 'CLS' ? 3 : 0,
+						yFormatter: function (v) {
+							return metric === 'CLS' ? Number(v).toFixed(3) : Math.round(v);
+						},
+						tooltipFormatter: function (v) {
+							return formatPsiMetric(metric, v);
+						},
+					});
+					if (chart) psiCharts.push(chart);
+				});
+
+				if (deviceWrap) {
+					deviceWrap.hidden = metricsVisible === 0;
+				}
+			});
+
+			if (!psiCharts.length) {
+				clearPsiCharts();
+			}
+		}
+
+		function loadCharts() {
+			return psiPost('gps_psi_chart_data', {}).then((data) => {
+				if (!data || !data.ok) {
+					clearPsiCharts();
+					if (el.chartsEmpty) {
+						el.chartsEmpty.hidden = false;
+						el.chartsEmpty.textContent = (data && data.error) || 'Не удалось загрузить данные графиков.';
+					}
+					return;
+				}
+				showPsiCharts(data.series || []);
+			}).catch(() => {
+				clearPsiCharts();
+				if (el.chartsEmpty) {
+					el.chartsEmpty.hidden = false;
+					el.chartsEmpty.textContent = 'Сбой загрузки данных графиков.';
+				}
+			});
+		}
+
 		function loadRuns(selectId) {
 			return psiPost('gps_psi_list_runs', {}).then((data) => {
 				if (!data || !data.ok) {
@@ -484,9 +735,11 @@
 					return;
 				}
 				fillRunsSelect(data.runs || [], selectId || '');
+				const tasks = [loadCharts()];
 				if (selectId) {
-					return loadRun(selectId);
+					tasks.push(loadRun(selectId));
 				}
+				return Promise.all(tasks);
 			});
 		}
 
@@ -583,6 +836,7 @@
 				showError('');
 				fillRunsSelect(data.runs || [], '');
 				showReportHtml('');
+				loadCharts();
 			});
 		});
 

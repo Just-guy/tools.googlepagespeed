@@ -29,6 +29,8 @@ class AdminAjax
 				return self::finalize($request);
 			case 'gps_psi_list_runs':
 				return self::listRuns();
+			case 'gps_psi_chart_data':
+				return self::chartData();
 			case 'gps_psi_get_run':
 				return self::getRun($request);
 			case 'gps_psi_delete_run':
@@ -260,6 +262,18 @@ class AdminAjax
 			'ok' => true,
 			'error' => null,
 			'runs' => VarianceStorage::listRuns(),
+		];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function chartData(): array
+	{
+		return [
+			'ok' => true,
+			'error' => null,
+			'series' => VarianceStorage::listChartSeries(),
 		];
 	}
 
