@@ -419,9 +419,16 @@
 			if (el.desktop) el.desktop.disabled = isRunning;
 		}
 
+		let pauseResolve = null;
+
 		function sleep(ms) {
 			return new Promise((resolve) => {
-				pauseTimer = setTimeout(resolve, ms);
+				pauseResolve = resolve;
+				pauseTimer = setTimeout(() => {
+					pauseTimer = null;
+					pauseResolve = null;
+					resolve();
+				}, ms);
 			});
 		}
 
@@ -429,6 +436,11 @@
 			if (pauseTimer) {
 				clearTimeout(pauseTimer);
 				pauseTimer = null;
+			}
+			if (pauseResolve) {
+				const resolve = pauseResolve;
+				pauseResolve = null;
+				resolve();
 			}
 		}
 
