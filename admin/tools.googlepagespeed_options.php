@@ -94,6 +94,12 @@ $aTabs = [
 		"TAB"   => "Тэг script",
 		"ICON"  => "main_user_edit",
 		"TITLE" => "Тэг script"
+	],
+	[
+		"DIV"   => "edit4",
+		"TAB"   => "Разброс PSI",
+		"ICON"  => "main_user_edit",
+		"TITLE" => "Разброс lab Performance (PSI)"
 	]
 ];
 $tabControl = new CAdminTabControl("tabControl", $aTabs);
@@ -246,9 +252,18 @@ if ($request["Update"] && check_bitrix_sessid()) {
 	}
 	// === LinksJsScripts
 
+	if ($request->offsetExists('PSI_API_KEY')) {
+		$psiKeyPosted = trim((string)$request->getPost('PSI_API_KEY'));
+		if ($psiKeyPosted !== '') {
+			Tools\GooglePageSpeed\Psi\Settings::setApiKey($psiKeyPosted);
+		}
+	}
+
 	Tools\GooglePageSpeed\SettingsProvider::clearCache();
 }
 
+$psiProbe = Tools\GooglePageSpeed\Psi\VarianceStorage::buildProbeUrlFromSite();
+$psiHasApiKey = Tools\GooglePageSpeed\Psi\Settings::hasApiKey();
 
 $APPLICATION->SetTitle('Настройки');
 
@@ -810,6 +825,93 @@ elseif ($DB->GetErrorMessage() != "")
 		</td>
 	</tr>
 
+	<?php $tabControl->BeginNextTab(); ?>
+
+	<tr>
+		<td colspan="10">
+			<div class="tools-gps-psi" id="tools-gps-psi">
+				<div class="tools-gps-psi__panel">
+					<div class="tools-gps-psi__title">Замер разброса lab Performance</div>
+					<div class="tools-gps-psi__subtitle">Серия прогонов PageSpeed Insights API. Сравнивайте «до/после» по медиане.</div>
+
+					<div class="tools-gps-psi__row">
+						<label class="tools-gps-psi__label" for="tools-gps-psi-url">URL прогона</label>
+						<div class="tools-gps-psi__url-row">
+							<input
+								type="url"
+								class="tools-gps-psi__input"
+								id="tools-gps-psi-url"
+								value="<?= !empty($psiProbe['ok']) && !empty($psiProbe['url']) ? htmlspecialcharsbx($psiProbe['url']) : '' ?>"
+								placeholder="https://ideal-mf.ru/"
+								autocomplete="off"
+							>
+							<input type="button" class="adm-btn" id="tools-gps-psi-url-from-site" value="Подставить домен сайта" title="Взять URL из настроек текущего сайта Bitrix">
+						</div>
+						<?php if (empty($psiProbe['ok'])) { ?>
+							<div class="tools-gps-psi__hint tools-gps-psi__hint--warn"><?= htmlspecialcharsbx((string)($psiProbe['error'] ?? 'Домен сайта не определён — введите URL вручную.')) ?></div>
+						<?php } ?>
+					</div>
+
+					<div class="tools-gps-psi__row">
+						<label class="tools-gps-psi__label" for="tools-gps-psi-api-key">Ключ API PSI</label>
+						<div class="tools-gps-psi__key-row">
+							<input
+								type="password"
+								class="tools-gps-psi__input"
+								id="tools-gps-psi-api-key"
+								name="PSI_API_KEY"
+								value=""
+								autocomplete="off"
+								placeholder="<?= $psiHasApiKey ? '•••••••• (ключ сохранён — введите новый, чтобы заменить)' : 'Вставьте ключ Google PageSpeed Insights API' ?>"
+							>
+							<input type="button" class="tools-gps-btn adm-btn-save" id="tools-gps-psi-save-key" value="Сохранить ключ">
+							<span class="tools-gps-psi__key-status" id="tools-gps-psi-key-status" <?= $psiHasApiKey ? '' : 'hidden' ?>>ключ есть</span>
+						</div>
+					</div>
+
+					<div class="tools-gps-psi__row tools-gps-psi__row--inline">
+						<div class="tools-gps-psi__field">
+							<label class="tools-gps-psi__label" for="tools-gps-psi-n">Число прогонов (N)</label>
+							<input type="number" class="tools-gps-psi__input tools-gps-psi__input--n" id="tools-gps-psi-n" min="1" max="20" value="5">
+							<div class="tools-gps-psi__hint">Эмпирически 5 прогонов достаточно для более-менее реалистичной картины разброса.</div>
+						</div>
+						<div class="tools-gps-psi__field">
+							<span class="tools-gps-psi__label">Устройства</span>
+							<label class="tools-gps-psi__check"><input type="checkbox" id="tools-gps-psi-mobile" checked> Мобильные</label>
+							<label class="tools-gps-psi__check"><input type="checkbox" id="tools-gps-psi-desktop" checked> Компьютер</label>
+						</div>
+					</div>
+
+					<div class="tools-gps-psi__actions">
+						<input type="button" class="tools-gps-btn adm-btn-save" id="tools-gps-psi-start" value="Старт">
+						<input type="button" class="adm-btn" id="tools-gps-psi-stop" value="Стоп" disabled>
+					</div>
+
+					<div class="tools-gps-psi__progress" id="tools-gps-psi-progress" hidden>
+						<div class="tools-gps-psi__progress-bar"><div class="tools-gps-psi__progress-fill" id="tools-gps-psi-progress-fill"></div></div>
+						<div class="tools-gps-psi__progress-text" id="tools-gps-psi-progress-text">0 / 0</div>
+					</div>
+					<div class="tools-gps-psi__log" id="tools-gps-psi-log" hidden></div>
+					<div class="tools-gps-psi__error" id="tools-gps-psi-error" hidden></div>
+				</div>
+
+				<div class="tools-gps-psi__panel tools-gps-psi__panel--history">
+					<div class="tools-gps-psi__title">Результаты серий</div>
+					<div class="tools-gps-psi__history-controls">
+						<select class="tools-gps-psi__select" id="tools-gps-psi-runs" aria-label="Серия прогонов">
+							<option value="">— нет сохранённых серий —</option>
+						</select>
+						<input type="button" class="adm-btn" id="tools-gps-psi-refresh" value="Обновить список">
+						<input type="button" class="adm-btn adm-btn-delete" id="tools-gps-psi-delete" value="Удалить серию" disabled>
+					</div>
+					<div class="tools-gps-psi__report" id="tools-gps-psi-report">
+						<p class="tools-gps-psi-report__empty">Выберите серию в списке или запустите новый замер.</p>
+					</div>
+				</div>
+			</div>
+		</td>
+	</tr>
+
 	<?php $tabControl->Buttons(); ?>
 	<input class="tools-gps-btn adm-btn-save" type="submit" name="Update" value="Применить" />
 	<input type="hidden" name="lang" value="<?= LANG ?>">
@@ -1154,6 +1256,347 @@ elseif ($DB->GetErrorMessage() != "")
 			}
 		}
 	});
+
+	(function initGpsPsiVariance() {
+		const root = document.getElementById('tools-gps-psi');
+		if (!root) {
+			return;
+		}
+
+		const PAUSE_MS = 45000;
+		let aborted = false;
+		let running = false;
+		let pauseTimer = null;
+
+		const el = {
+			url: document.getElementById('tools-gps-psi-url'),
+			urlFromSite: document.getElementById('tools-gps-psi-url-from-site'),
+			key: document.getElementById('tools-gps-psi-api-key'),
+			keyStatus: document.getElementById('tools-gps-psi-key-status'),
+			saveKey: document.getElementById('tools-gps-psi-save-key'),
+			n: document.getElementById('tools-gps-psi-n'),
+			mobile: document.getElementById('tools-gps-psi-mobile'),
+			desktop: document.getElementById('tools-gps-psi-desktop'),
+			start: document.getElementById('tools-gps-psi-start'),
+			stop: document.getElementById('tools-gps-psi-stop'),
+			progress: document.getElementById('tools-gps-psi-progress'),
+			progressFill: document.getElementById('tools-gps-psi-progress-fill'),
+			progressText: document.getElementById('tools-gps-psi-progress-text'),
+			log: document.getElementById('tools-gps-psi-log'),
+			error: document.getElementById('tools-gps-psi-error'),
+			runs: document.getElementById('tools-gps-psi-runs'),
+			refresh: document.getElementById('tools-gps-psi-refresh'),
+			deleteBtn: document.getElementById('tools-gps-psi-delete'),
+			report: document.getElementById('tools-gps-psi-report'),
+		};
+
+		function psiPost(action, fields) {
+			const body = new FormData();
+			body.append('action', action);
+			body.append('sessid', gpsScanSessid);
+			Object.keys(fields || {}).forEach((key) => {
+				const val = fields[key];
+				if (Array.isArray(val)) {
+					val.forEach((item) => body.append(key + '[]', item));
+				} else if (val !== undefined && val !== null) {
+					body.append(key, String(val));
+				}
+			});
+			return fetch(window.location.href, {
+				method: 'POST',
+				body: body,
+				credentials: 'same-origin',
+			}).then((r) => r.json());
+		}
+
+		function showError(msg) {
+			if (!el.error) return;
+			el.error.hidden = !msg;
+			el.error.textContent = msg || '';
+		}
+
+		function appendLog(line) {
+			if (!el.log) return;
+			el.log.hidden = false;
+			el.log.textContent += (el.log.textContent ? '\n' : '') + line;
+			el.log.scrollTop = el.log.scrollHeight;
+		}
+
+		function setProgress(done, total) {
+			if (!el.progress) return;
+			el.progress.hidden = false;
+			const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+			if (el.progressFill) el.progressFill.style.width = pct + '%';
+			if (el.progressText) el.progressText.textContent = done + ' / ' + total;
+		}
+
+		function setRunningUi(isRunning) {
+			running = isRunning;
+			if (el.start) el.start.disabled = isRunning;
+			if (el.stop) el.stop.disabled = !isRunning;
+			if (el.url) el.url.disabled = isRunning;
+			if (el.urlFromSite) el.urlFromSite.disabled = isRunning;
+			if (el.n) el.n.disabled = isRunning;
+			if (el.mobile) el.mobile.disabled = isRunning;
+			if (el.desktop) el.desktop.disabled = isRunning;
+		}
+
+		function sleep(ms) {
+			return new Promise((resolve) => {
+				pauseTimer = setTimeout(resolve, ms);
+			});
+		}
+
+		function clearPause() {
+			if (pauseTimer) {
+				clearTimeout(pauseTimer);
+				pauseTimer = null;
+			}
+		}
+
+		function fillRunsSelect(runs, selectId) {
+			if (!el.runs) return;
+			const list = Array.isArray(runs) ? runs : [];
+			el.runs.innerHTML = '';
+			if (!list.length) {
+				el.runs.innerHTML = '<option value="">— нет сохранённых серий —</option>';
+				if (el.deleteBtn) el.deleteBtn.disabled = true;
+				return;
+			}
+			list.forEach((run) => {
+				const opt = document.createElement('option');
+				opt.value = run.id || '';
+				opt.textContent = run.label || run.id || '';
+				el.runs.appendChild(opt);
+			});
+			if (selectId) {
+				el.runs.value = selectId;
+			}
+			if (el.deleteBtn) el.deleteBtn.disabled = !el.runs.value;
+		}
+
+		function showReportHtml(html) {
+			if (!el.report) return;
+			if (html) {
+				el.report.innerHTML = html;
+			} else {
+				el.report.innerHTML = '<p class="tools-gps-psi-report__empty">Нет данных отчёта для этой серии.</p>';
+			}
+		}
+
+		function loadRuns(selectId) {
+			return psiPost('gps_psi_list_runs', {}).then((data) => {
+				if (!data || !data.ok) {
+					showError((data && data.error) || 'Не удалось загрузить список серий.');
+					return;
+				}
+				fillRunsSelect(data.runs || [], selectId || '');
+				if (selectId) {
+					return loadRun(selectId);
+				}
+			});
+		}
+
+		function loadRun(runId) {
+			if (!runId) {
+				showReportHtml('');
+				if (el.deleteBtn) el.deleteBtn.disabled = true;
+				return Promise.resolve();
+			}
+			if (el.deleteBtn) el.deleteBtn.disabled = false;
+			return psiPost('gps_psi_get_run', { run_id: runId }).then((data) => {
+				if (!data || !data.ok) {
+					showError((data && data.error) || 'Не удалось загрузить серию.');
+					return;
+				}
+				showError('');
+				showReportHtml(data.html || '');
+			});
+		}
+
+		el.urlFromSite?.addEventListener('click', () => {
+			psiPost('gps_psi_probe_url', {}).then((data) => {
+				if (!data || !data.ok || !data.url) {
+					showError((data && data.error) || 'Не удалось получить домен сайта.');
+					return;
+				}
+				showError('');
+				if (el.url) {
+					el.url.value = data.url;
+				}
+			}).catch(() => {
+				showError('Сбой запроса домена сайта.');
+			});
+		});
+
+		el.saveKey?.addEventListener('click', () => {
+			const key = (el.key?.value || '').trim();
+			psiPost('gps_psi_save_key', { api_key: key }).then((data) => {
+				if (!data || !data.ok) {
+					showError((data && data.error) || 'Не удалось сохранить ключ.');
+					return;
+				}
+				showError('');
+				if (el.key) el.key.value = '';
+				if (el.keyStatus) {
+					el.keyStatus.hidden = !data.hasKey;
+					el.keyStatus.textContent = data.hasKey ? 'ключ есть' : '';
+				}
+				if (el.key && data.hasKey) {
+					el.key.placeholder = '•••••••• (ключ сохранён — введите новый, чтобы заменить)';
+				}
+			});
+		});
+
+		el.refresh?.addEventListener('click', () => {
+			loadRuns(el.runs?.value || '');
+		});
+
+		el.runs?.addEventListener('change', () => {
+			loadRun(el.runs.value || '');
+		});
+
+		el.deleteBtn?.addEventListener('click', () => {
+			const runId = el.runs?.value || '';
+			if (!runId) return;
+			if (!window.confirm('Удалить выбранную серию с диска?')) return;
+			psiPost('gps_psi_delete_run', { run_id: runId }).then((data) => {
+				if (!data || !data.ok) {
+					showError((data && data.error) || 'Не удалось удалить серию.');
+					return;
+				}
+				showError('');
+				fillRunsSelect(data.runs || [], '');
+				showReportHtml('');
+			});
+		});
+
+		el.stop?.addEventListener('click', () => {
+			aborted = true;
+			clearPause();
+			appendLog('Стоп: после текущего прогона серия будет завершена…');
+		});
+
+		el.start?.addEventListener('click', async () => {
+			if (running) return;
+			showError('');
+			if (el.log) {
+				el.log.hidden = false;
+				el.log.textContent = '';
+			}
+
+			const strategies = [];
+			if (el.mobile?.checked) strategies.push('mobile');
+			if (el.desktop?.checked) strategies.push('desktop');
+			if (!strategies.length) {
+				showError('Выберите хотя бы одно устройство.');
+				return;
+			}
+
+			const probeUrl = (el.url?.value || '').trim();
+			if (!probeUrl) {
+				showError('Укажите URL для прогона.');
+				return;
+			}
+
+			aborted = false;
+			setRunningUi(true);
+			setProgress(0, 1);
+
+			let startData;
+			try {
+				startData = await psiPost('gps_psi_start', {
+					url: probeUrl,
+					n: el.n?.value || 5,
+					strategies: strategies,
+				});
+			} catch (e) {
+				setRunningUi(false);
+				showError('Сбой запроса старта серии.');
+				return;
+			}
+
+			if (!startData || !startData.ok) {
+				setRunningUi(false);
+				showError((startData && startData.error) || 'Не удалось стартовать серию.');
+				return;
+			}
+
+			const queue = startData.queue || [];
+			const total = queue.length || startData.total || 0;
+			const runId = startData.runId;
+			appendLog('Серия ' + runId + ' · ' + (startData.url || '') + ' · шагов: ' + total);
+			setProgress(0, total);
+
+			let done = 0;
+			let failed = false;
+			let failMessage = '';
+
+			for (let i = 0; i < queue.length; i++) {
+				if (aborted) {
+					break;
+				}
+				const step = queue[i];
+				appendLog('… ' + step.strategy + ' #' + step.n);
+				let one;
+				try {
+					one = await psiPost('gps_psi_run_one', {
+						run_id: runId,
+						strategy: step.strategy,
+						n: step.n,
+					});
+				} catch (e) {
+					failed = true;
+					failMessage = 'Сбой сети на прогоне ' + step.strategy + ' #' + step.n;
+					break;
+				}
+				if (!one || !one.ok) {
+					failed = true;
+					failMessage = (one && one.error) || ('Ошибка прогона ' + step.strategy + ' #' + step.n);
+					appendLog('✗ ' + failMessage);
+					break;
+				}
+				done += 1;
+				const score = one.metrics && one.metrics.score != null ? one.metrics.score : '—';
+				appendLog('✓ ' + step.strategy + ' #' + step.n + ' → ' + score);
+				setProgress(done, total);
+
+				const isLast = i === queue.length - 1;
+				if (!isLast && !aborted) {
+					appendLog('пауза 45 с…');
+					await sleep(PAUSE_MS);
+				}
+			}
+
+			clearPause();
+			const finalStatus = failed ? 'error' : (aborted ? 'stopped' : 'done');
+			let fin;
+			try {
+				fin = await psiPost('gps_psi_finalize', {
+					run_id: runId,
+					status: finalStatus,
+				});
+			} catch (e) {
+				setRunningUi(false);
+				showError('Прогоны частично выполнены, но finalize не удался.');
+				return;
+			}
+
+			setRunningUi(false);
+			if (!fin || !fin.ok) {
+				showError((fin && fin.error) || failMessage || 'Ошибка завершения серии.');
+			} else {
+				appendLog('Готово · статус: ' + finalStatus);
+				if (failMessage) {
+					showError(failMessage);
+				}
+				showReportHtml(fin.html || '');
+			}
+			await loadRuns(runId);
+		});
+
+		loadRuns();
+	})();
 
 	document.addEventListener('click', (event) => {
 		if (event.target.classList.contains('tools-gps-filed__add')) {
@@ -1969,6 +2412,271 @@ elseif ($DB->GetErrorMessage() != "")
 	.tools-gps-script-ref__warning-icon {
 		flex-shrink: 0;
 		margin-top: 1px;
+	}
+
+	.tools-gps-psi {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		max-width: 960px;
+	}
+
+	.tools-gps-psi__panel {
+		background: #fff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		padding: 16px 18px 18px;
+	}
+
+	.tools-gps-psi__title {
+		font-size: 15px;
+		font-weight: 700;
+		color: #0f172a;
+		margin-bottom: 4px;
+	}
+
+	.tools-gps-psi__subtitle {
+		font-size: 13px;
+		color: #64748b;
+		line-height: 1.45;
+		margin-bottom: 14px;
+	}
+
+	.tools-gps-psi__row {
+		margin-bottom: 14px;
+	}
+
+	.tools-gps-psi__row--inline {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 20px 32px;
+	}
+
+	.tools-gps-psi__label {
+		display: block;
+		font-size: 12px;
+		font-weight: 600;
+		color: #475569;
+		margin-bottom: 6px;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+
+	.tools-gps-psi__url-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.tools-gps-psi__hint--warn {
+		color: #b45309;
+	}
+
+	.tools-gps-psi__key-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.tools-gps-psi__input {
+		min-width: 280px;
+		flex: 1;
+		padding: 6px 10px;
+		border: 1px solid #cbd5e1;
+		border-radius: 4px;
+		font-size: 13px;
+	}
+
+	.tools-gps-psi__input--n {
+		min-width: 80px;
+		max-width: 100px;
+		flex: 0 0 auto;
+	}
+
+	.tools-gps-psi__hint {
+		margin-top: 6px;
+		font-size: 12px;
+		color: #64748b;
+		line-height: 1.4;
+		max-width: 420px;
+	}
+
+	.tools-gps-psi__check {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-right: 14px;
+		font-size: 13px;
+		color: #334155;
+	}
+
+	.tools-gps-psi__key-status {
+		font-size: 12px;
+		color: #15803d;
+		font-weight: 600;
+	}
+
+	.tools-gps-psi__actions {
+		display: flex;
+		gap: 8px;
+		margin-bottom: 12px;
+	}
+
+	.tools-gps-psi__progress {
+		margin-bottom: 10px;
+	}
+
+	.tools-gps-psi__progress-bar {
+		height: 8px;
+		background: #e2e8f0;
+		border-radius: 999px;
+		overflow: hidden;
+	}
+
+	.tools-gps-psi__progress-fill {
+		height: 100%;
+		width: 0;
+		background: #2563eb;
+		transition: width 0.2s ease;
+	}
+
+	.tools-gps-psi__progress-text {
+		margin-top: 4px;
+		font-size: 12px;
+		color: #64748b;
+	}
+
+	.tools-gps-psi__log {
+		max-height: 160px;
+		overflow: auto;
+		background: #0f172a;
+		color: #e2e8f0;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 12px;
+		line-height: 1.45;
+		padding: 10px 12px;
+		border-radius: 6px;
+		white-space: pre-wrap;
+		margin-bottom: 8px;
+	}
+
+	.tools-gps-psi__error {
+		color: #b91c1c;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 6px;
+		padding: 8px 10px;
+		font-size: 13px;
+	}
+
+	.tools-gps-psi__history-controls {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		align-items: center;
+		margin-bottom: 14px;
+	}
+
+	.tools-gps-psi__select {
+		min-width: 320px;
+		flex: 1;
+		padding: 6px 8px;
+		font-size: 13px;
+		border: 1px solid #cbd5e1;
+		border-radius: 4px;
+	}
+
+	.tools-gps-psi__report {
+		border-top: 1px solid #e2e8f0;
+		padding-top: 12px;
+	}
+
+	.tools-gps-psi-report {
+		font-size: 13px;
+		color: #334155;
+		line-height: 1.45;
+	}
+
+	.tools-gps-psi-report__title {
+		margin: 0 0 10px;
+		font-size: 16px;
+		color: #0f172a;
+	}
+
+	.tools-gps-psi-report__meta {
+		margin: 0 0 16px;
+		padding: 0;
+		list-style: none;
+	}
+
+	.tools-gps-psi-report__meta li {
+		margin-bottom: 4px;
+	}
+
+	.tools-gps-psi-report__meta-label {
+		display: inline-block;
+		min-width: 72px;
+		font-weight: 600;
+		color: #64748b;
+		margin-right: 6px;
+	}
+
+	.tools-gps-psi-report__section {
+		margin-bottom: 16px;
+	}
+
+	.tools-gps-psi-report__section-title {
+		margin: 0 0 8px;
+		font-size: 14px;
+		color: #0f172a;
+	}
+
+	.tools-gps-psi-report__device-title {
+		margin: 0 0 6px;
+		font-size: 13px;
+		color: #475569;
+	}
+
+	.tools-gps-psi-report__table {
+		width: 100%;
+		border-collapse: collapse;
+		margin-bottom: 12px;
+	}
+
+	.tools-gps-psi-report__table th,
+	.tools-gps-psi-report__table td {
+		border: 1px solid #e2e8f0;
+		padding: 6px 8px;
+		text-align: left;
+	}
+
+	.tools-gps-psi-report__table thead th {
+		background: #f8fafc;
+		font-size: 12px;
+		color: #64748b;
+	}
+
+	.tools-gps-psi-report__median {
+		font-weight: 700;
+		color: #1d4ed8;
+	}
+
+	.tools-gps-psi-report__howto {
+		margin: 0;
+		padding-left: 18px;
+	}
+
+	.tools-gps-psi-report__empty {
+		margin: 0;
+		color: #94a3b8;
+		font-size: 13px;
+	}
+
+	.tools-gps-psi-report__status--stopped .tools-gps-psi-report__meta-label + *,
+	.tools-gps-psi-report__status--stopped {
+		color: #b45309;
 	}
 </style>
 <?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/epilog_admin.php");

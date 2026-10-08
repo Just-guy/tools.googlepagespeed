@@ -76,9 +76,9 @@ class AdminAjax
 			return self::fail('Сначала сохраните ключ API PageSpeed Insights.');
 		}
 
-		$probe = VarianceStorage::buildProbeUrlFromSite();
+		$probe = VarianceStorage::normalizeProbeUrl((string)$request->getPost('url'));
 		if (!$probe['ok'] || empty($probe['url'])) {
-			return self::fail((string)($probe['error'] ?: 'Не удалось определить URL прогона.'));
+			return self::fail((string)($probe['error'] ?: 'Некорректный URL прогона.'));
 		}
 
 		$n = (int)$request->getPost('n');

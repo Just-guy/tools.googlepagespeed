@@ -303,12 +303,64 @@ class VarianceStorage
 			return [
 				'ok' => false,
 				'url' => null,
-				'error' => 'Не удалось определить домен сайта (SITE_SERVER_NAME / ServerName пуст). Задайте домен сайта в настройках Bitrix.',
+				'error' => 'Не удалось определить домен сайта (SITE_SERVER_NAME / ServerName пуст). Задайте домен сайта в настройках Bitrix или введите URL вручную.',
 			];
 		}
 		return [
 			'ok' => true,
 			'url' => 'https://' . $serverName . '/',
+			'error' => null,
+		];
+	}
+
+	/**
+	 * Нормализация и лёгкая проверка URL прогона (http/https).
+	 *
+	 * @return array{ok: bool, url: ?string, error: ?string}
+	 */
+	public static function normalizeProbeUrl(string $url): array
+	{
+		$url = trim($url);
+		if ($url === '') {
+			return [
+				'ok' => false,
+				'url' => null,
+				'error' => 'Укажите URL для прогона.',
+			];
+		}
+		if (!preg_match('#^https?://#i', $url)) {
+			$url = 'https://' . ltrim($url, '/');
+		}
+		$parts = parse_url($url);
+		if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+			return [
+				'ok' => false,
+				'url' => null,
+				'error' => 'Некорректный URL. Пример: https://ideal-mf.ru/',
+			];
+		}
+		$scheme = strtolower((string)$parts['scheme']);
+		if ($scheme !== 'http' && $scheme !== 'https') {
+			return [
+				'ok' => false,
+				'url' => null,
+				'error' => 'Допустимы только http и https.',
+			];
+		}
+		$path = (string)($parts['path'] ?? '/');
+		if ($path === '') {
+			$path = '/';
+		}
+		$query = isset($parts['query']) && $parts['query'] !== '' ? '?' . $parts['query'] : '';
+		$normalized = $scheme . '://' . $parts['host'];
+		if (!empty($parts['port'])) {
+			$normalized .= ':' . (int)$parts['port'];
+		}
+		$normalized .= $path . $query;
+
+		return [
+			'ok' => true,
+			'url' => $normalized,
 			'error' => null,
 		];
 	}
