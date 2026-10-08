@@ -1216,3 +1216,7 @@
 .tools-gps-psi-report__status--stopped {
 	color: #b45309;
 }
+
+.tools-gps-psi-report__device:last-child {
+	margin-top: 20px;
+}
