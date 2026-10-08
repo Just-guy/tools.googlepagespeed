@@ -122,7 +122,7 @@ if ($request["Update"] && check_bitrix_sessid()) {
 			continue;
 		}
 		$codeOption = (string)($arrayOptions[$keyOption]['CODE_OPTION'] ?? '');
-		if (in_array($codeOption, ['YANDEX_METRIKA', 'GOOGLE_ANALYTICS', 'GOOGLE_TAG_MANAGER'], true)) {
+		if (in_array($codeOption, Tools\GooglePageSpeed\OptionsDefinitions::getHiddenOptionCodes(), true)) {
 			continue;
 		}
 		if (($arrayOptions[$keyOption]['OPTION_TYPE'] ?? '') === 'heading') {
@@ -323,12 +323,12 @@ elseif ($DB->GetErrorMessage() != "")
 			$optionsByCode[$code] = ['key' => $keyOption, 'row' => $valueOption];
 		}
 	}
-	$scriptChildCodes = ['ELIMINATE_SCRIPTS_GENERAL_JS', 'ELIMINATE_SCRIPTS_ASPRO_JS'];
-	$hiddenOptionCodes = ['YANDEX_METRIKA', 'GOOGLE_ANALYTICS', 'GOOGLE_TAG_MANAGER'];
+	$hiddenOptionCodes = Tools\GooglePageSpeed\OptionsDefinitions::getHiddenOptionCodes();
 
-	$renderGpsOptionRow = static function (int|string $keyOption, array $valueOption, array $limitation, bool $nested = false): void {
+	$renderGpsOptionRow = static function (int|string $keyOption, array $valueOption, array $limitation, bool $nested = false, string $hint = ''): void {
 		$code = (string)($valueOption['CODE_OPTION'] ?? '');
 		$rowClass = 'tools-gps-filed' . ($nested ? ' tools-gps-filed--nested' : '');
+		$hint = trim($hint);
 		?>
 		<tr class="<?= $rowClass ?>">
 			<td class="tools-gps-filed__active">
@@ -337,6 +337,9 @@ elseif ($DB->GetErrorMessage() != "")
 			</td>
 			<td class="tools-gps-filed__name">
 				<?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?>
+				<?php if ($hint !== '') { ?>
+					<div class="tools-gps-filed__hint tools-gps-filed__hint--warn"><?= htmlspecialcharsbx($hint) ?></div>
+				<?php } ?>
 			</td>
 			<td class="tools-gps-filed__value">
 				<select name="OPTIONS[<?= $keyOption ?>][LIMITATION]">
@@ -349,19 +352,56 @@ elseif ($DB->GetErrorMessage() != "")
 		<?php
 	};
 
-	$mainOptionKeys = [];
-	$deferOptionKeys = [];
-	foreach ($arrayOptions as $keyOption => $valueOption) {
-		$code = (string)($valueOption['CODE_OPTION'] ?? '');
-		if (in_array($code, $scriptChildCodes, true) || in_array($code, $hiddenOptionCodes, true)) {
-			continue;
+	$renderPanelFromDefinitions = static function (string $panel) use (
+		$optionsByCode,
+		$hiddenOptionCodes,
+		$limitation,
+		$renderGpsOptionRow
+	): void {
+		foreach (Tools\GooglePageSpeed\OptionsDefinitions::forPanel($panel) as $def) {
+			$code = (string)($def['CODE_OPTION'] ?? '');
+			if ($code === '' || in_array($code, $hiddenOptionCodes, true)) {
+				continue;
+			}
+			if (!empty($def['PARENT'])) {
+				continue;
+			}
+			if (!isset($optionsByCode[$code])) {
+				continue;
+			}
+
+			$keyOption = $optionsByCode[$code]['key'];
+			$valueOption = $optionsByCode[$code]['row'];
+			$hint = (string)($def['HINT'] ?? '');
+
+			if (($def['OPTION_TYPE'] ?? '') === 'heading') {
+				?>
+				<tr class="tools-gps-filed tools-gps-filed--heading">
+					<td class="tools-gps-filed__active"></td>
+					<td class="tools-gps-filed__name" colspan="2">
+						<strong><?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?></strong>
+					</td>
+				</tr>
+				<?php
+				foreach (Tools\GooglePageSpeed\OptionsDefinitions::getChildCodes($code) as $childCode) {
+					if (!isset($optionsByCode[$childCode])) {
+						continue;
+					}
+					$childDef = Tools\GooglePageSpeed\OptionsDefinitions::getByCode($childCode);
+					$renderGpsOptionRow(
+						$optionsByCode[$childCode]['key'],
+						$optionsByCode[$childCode]['row'],
+						$limitation,
+						true,
+						(string)($childDef['HINT'] ?? '')
+					);
+				}
+				continue;
+			}
+
+			$renderGpsOptionRow($keyOption, $valueOption, $limitation, false, $hint);
 		}
-		if (str_starts_with($code, 'DEFER_')) {
-			$deferOptionKeys[] = $keyOption;
-		} else {
-			$mainOptionKeys[] = $keyOption;
-		}
-	}
+	};
 	?>
 	<tr class="tools-gps-options-layout-row">
 		<td colspan="10">
@@ -370,38 +410,7 @@ elseif ($DB->GetErrorMessage() != "")
 					<div class="tools-gps-options-panel">
 						<div class="tools-gps-options-panel__title">Опции</div>
 						<table class="tools-gps-options-panel__table">
-							<?php
-							foreach ($mainOptionKeys as $keyOption) {
-								$valueOption = $arrayOptions[$keyOption];
-								$code = (string)($valueOption['CODE_OPTION'] ?? '');
-								$optionType = (string)($valueOption['OPTION_TYPE'] ?? '');
-								if ($optionType === 'heading') {
-									?>
-									<tr class="tools-gps-filed tools-gps-filed--heading">
-										<td class="tools-gps-filed__active"></td>
-										<td class="tools-gps-filed__name" colspan="2">
-											<strong><?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?></strong>
-										</td>
-									</tr>
-									<?php
-									if ($code === 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY') {
-										foreach ($scriptChildCodes as $childCode) {
-											if (!isset($optionsByCode[$childCode])) {
-												continue;
-											}
-											$renderGpsOptionRow(
-												$optionsByCode[$childCode]['key'],
-												$optionsByCode[$childCode]['row'],
-												$limitation,
-												true
-											);
-										}
-									}
-									continue;
-								}
-								$renderGpsOptionRow($keyOption, $valueOption, $limitation);
-							}
-							?>
+							<?php $renderPanelFromDefinitions('main'); ?>
 						</table>
 					</div>
 				</div>
@@ -410,11 +419,7 @@ elseif ($DB->GetErrorMessage() != "")
 						<div class="tools-gps-options-panel__title">Отложить скрипты</div>
 						<div class="tools-gps-options-panel__subtitle">Idle или первое взаимодействие — что раньше. Не путать с «Вырезать…».</div>
 						<table class="tools-gps-options-panel__table">
-							<?php
-							foreach ($deferOptionKeys as $keyOption) {
-								$renderGpsOptionRow($keyOption, $arrayOptions[$keyOption], $limitation);
-							}
-							?>
+							<?php $renderPanelFromDefinitions('defer'); ?>
 						</table>
 					</div>
 				</div>

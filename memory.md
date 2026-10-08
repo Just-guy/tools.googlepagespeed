@@ -19,7 +19,7 @@
 
 Это дополнение поверх шаблона, не замена нормальной оптимизации. После установки всё выключено — работает только после включения опций и «Применить».
 
-Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.4.0`).
+Документация для людей: `readme.md`. Версия в `install/version.php` (сейчас `1.4.1`).
 
 ## Структура
 
@@ -31,8 +31,9 @@
 | `lib/RobotDetector.php` | Детект UA Lighthouse |
 | `lib/SettingsProvider.php` | Чтение настроек модуля (опции / link / script) через ManagedCache |
 | `lib/OptionActions.php` | Действия опций + реестр `OPTION_ACTION` |
+| `lib/OptionsDefinitions.php` | Единый каталог опций вкладки «Опции» (PANEL/PARENT/HINT) |
 | `lib/ScriptDeferral.php` | Очередь отложенных скриптов, stubs, runtime |
-| `lib/DeferredPresets.php` | Определения пресетов E + ensure в БД |
+| `lib/DeferredPresets.php` | Ensure пресетов defer (+ обёртка над OptionsDefinitions) |
 | `lib/ScriptScanCatalog.php` | Реестр сканера: hide (ядро/аналитика) + presets (Jivo и др.) |
 | `lib/PageScriptScanner.php` | HTTP-скан страницы, разбор `<script src>`, классификация |
 | `lib/GPSOptions.php` | ORM опций |
@@ -83,9 +84,10 @@ Main::OnEndBufferContent
 | **SettingsProvider** | Чтение настроек + ManagedCache | `getOptions`, `getLinksCssStyles`, `getLinksJsScripts`, `clearCache` |
 | **RobotDetector** | UA Lighthouse | `isPageSpeedRobot` |
 | **HtmlBuffer** | Правки разметки для вкладок link/script | `insertAfterOpeningHead`, `addAttributeToMatchingScripts` |
-| **OptionActions** | Реестр и тело опций вкладки «Опции» | `run`, `eliminateStyleSheets…`, `eliminateScriptsGeneralJs`, `eliminateScriptsAsproJs`, `eliminateScriptsThatBlockDisplay` (deprecated alias = оба), `relocateMatchingHeadScripts` (private), `addLoadingLazy…`, `addDecodingAsync…`, `ensureEliminateScriptsOption`, `ensureImgAttributeOptions`, `getImgAttributeOptionDefinitions` |
+| **OptionActions** | Runtime опций | `run`, `eliminateStyleSheets…`, `eliminateScripts…`, `addLoadingLazy…`, `addDecodingAsync…`, `ensureEliminateScriptsOption`, `ensureImgAttributeOptions` |
+| **OptionsDefinitions** | Каталог опций вкладки | `getAll`, `forPanel`, `getByCode`, `getChildCodes`, `getHiddenOptionCodes`, `toDbRow`, `getInstallRows` |
 | **ScriptDeferral** | Пресеты «отложить» (не путать с вырезать) | `reset`, `deferYandexMetrika`, `deferGoogleAnalytics`, `deferRoistat`, `deferEnvybox`, `deferCalltouch`, `deferCdnInputmask`, `injectRuntime` |
-| **DeferredPresets** | Строки БД для пресетов E | `getOptionDefinitions`, `ensureOptions` |
+| **DeferredPresets** | Ensure пресетов defer | `getOptionDefinitions` (из каталога), `ensureOptions` |
 | **PageScriptScanner** | AJAX-скан вкладки «Тэг script» | `scan`, `parseUrlList`, `getPublicOrigin`, `normalizeSrc`, `suggestPublicPart` |
 | **ScriptScanCatalog** | Справочник сканера | `getHideRules`, `getPresets`, `getScanUrlPresets`, `matchHide`, `matchPreset` |
 | **GPSOptionsTable** | ORM `b_gps_options` | стандартный DataManager + `exitsOrCreateTable` / `dropTable` |
@@ -99,6 +101,7 @@ Main::OnEndBufferContent
 ## Ключевые решения (код)
 
 - **Разбиение `Main` (вариант A):** оркестрация в `Main`, домены — отдельные классы (см. таблицу структуры). Публичный API админки/install/ORM: `SettingsProvider`, `DeferredPresets` (не фасады на `Main`).
+- **v1.4.1 (2026-10-08):** опции вкладки «Опции» унифицированы в `OptionsDefinitions` (`PANEL` main/defer, `PARENT` для nested, опциональный `HINT`). Install — `getInstallRows()`; админка рендерит по каталогу (порядок UI не зависит от ID в БД). `DeferredPresets` / ensure — без копий массивов.
 - Обработка только публичного HTML: пропуск admin, AJAX, CLI, ответов без `<head>` (`BufferGuard::shouldSkip`).
 - Preload/`link` вставляются **сразу после** открывающего `<head>`, без затирания тега и атрибутов (`HtmlBuffer`).
 - `async`/`defer` вешаются на весь открывающий `<script src="...">`, не на фрагмент `src`.

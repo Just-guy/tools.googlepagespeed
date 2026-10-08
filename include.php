@@ -9,6 +9,7 @@ Bitrix\Main\Loader::registerAutoloadClasses(
 		'Tools\\GooglePageSpeed\\RobotDetector'         => 'lib/RobotDetector.php',
 		'Tools\\GooglePageSpeed\\SettingsProvider'       => 'lib/SettingsProvider.php',
 		'Tools\\GooglePageSpeed\\OptionActions'         => 'lib/OptionActions.php',
+		'Tools\\GooglePageSpeed\\OptionsDefinitions'    => 'lib/OptionsDefinitions.php',
 		'Tools\\GooglePageSpeed\\ScriptDeferral'        => 'lib/ScriptDeferral.php',
 		'Tools\\GooglePageSpeed\\DeferredPresets'       => 'lib/DeferredPresets.php',
 		'Tools\\GooglePageSpeed\\ScriptScanCatalog'     => 'lib/ScriptScanCatalog.php',

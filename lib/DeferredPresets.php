@@ -5,76 +5,16 @@ namespace Tools\GooglePageSpeed;
 class DeferredPresets
 {
 	/**
-	 * Определения пресетов отложенной загрузки для install / миграции БД.
+	 * Пресеты правой колонки «Отложить скрипты» (из OptionsDefinitions).
 	 */
 	public static function getOptionDefinitions(): array
 	{
-		return [
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'DEFER_YANDEX_METRIKA',
-				'NAME_OPTION' => 'Отложить Яндекс.Метрику',
-				'OPTION_ACTION' => 'deferYandexMetrika',
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone',
-			],
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'DEFER_GOOGLE_ANALYTICS',
-				'NAME_OPTION' => 'Отложить Google Analytics',
-				'OPTION_ACTION' => 'deferGoogleAnalytics',
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone',
-			],
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'DEFER_GOOGLE_TAG_MANAGER',
-				'NAME_OPTION' => 'Отложить Google Tag Manager',
-				'OPTION_ACTION' => 'deferGoogleTagManager',
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone',
-			],
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'DEFER_ROISTAT',
-				'NAME_OPTION' => 'Отложить Roistat',
-				'OPTION_ACTION' => 'deferRoistat',
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone',
-			],
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'DEFER_ENVYBOX',
-				'NAME_OPTION' => 'Отложить Envybox',
-				'OPTION_ACTION' => 'deferEnvybox',
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone',
-			],
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'DEFER_CALLTOUCH',
-				'NAME_OPTION' => 'Отложить Calltouch',
-				'OPTION_ACTION' => 'deferCalltouch',
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone',
-			],
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'DEFER_CDN_INPUTMASK',
-				'NAME_OPTION' => 'Отложить Inputmask (CDN)',
-				'OPTION_ACTION' => 'deferCdnInputmask',
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone',
-			],
-			// [
-			// 	'ACTIVE' => 'N',
-			// 	'CODE_OPTION' => 'DEFER_JIVOCHAT',
-			// 	'NAME_OPTION' => 'Отложить JivoChat',
-			// 	'OPTION_ACTION' => 'deferJivoChat',
-			// 	'OPTION_TYPE' => 'function',
-			// 	'LIMITATION' => 'for-everyone',
-			// ],
-		];
+		$rows = [];
+		foreach (OptionsDefinitions::forPanel('defer') as $def) {
+			$rows[] = OptionsDefinitions::toDbRow($def);
+		}
+
+		return $rows;
 	}
 
 	/**
@@ -111,7 +51,7 @@ class DeferredPresets
 	 */
 	public static function disableObsoleteCutOptions(): void
 	{
-		$obsolete = ['YANDEX_METRIKA', 'GOOGLE_ANALYTICS', 'GOOGLE_TAG_MANAGER'];
+		$obsolete = OptionsDefinitions::getHiddenOptionCodes();
 		$changed = false;
 		foreach (SettingsProvider::getOptions([]) as $row) {
 			$code = (string)($row['CODE_OPTION'] ?? '');

@@ -46,23 +46,6 @@ class OptionActions
 	];
 
 	/**
-	 * Опции атрибутов img для install / миграции БД.
-	 */
-	public static function getImgAttributeOptionDefinitions(): array
-	{
-		return [
-			[
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'ADD_DECODING_ASYNC_ATTRIBUTE_ALL_TAGS_IMG',
-				'NAME_OPTION' => 'Добавить decoding="async" остальным тэгам img',
-				'OPTION_ACTION' => 'addDecodingAsyncAttributeAllTagsImg',
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone',
-			],
-		];
-	}
-
-	/**
 	 * Добавляет опции img-атрибутов в БД / убирает устаревшие.
 	 */
 	public static function ensureImgAttributeOptions(): void
@@ -87,11 +70,9 @@ class OptionActions
 			}
 		}
 
-		foreach (self::getImgAttributeOptionDefinitions() as $def) {
-			if (isset($existing[$def['CODE_OPTION']])) {
-				continue;
-			}
-			GPSOptionsTable::add($def);
+		$decoding = OptionsDefinitions::getByCode('ADD_DECODING_ASYNC_ATTRIBUTE_ALL_TAGS_IMG');
+		if ($decoding !== null && !isset($existing[$decoding['CODE_OPTION']])) {
+			GPSOptionsTable::add(OptionsDefinitions::toDbRow($decoding));
 			$changed = true;
 		}
 
@@ -373,6 +354,11 @@ class OptionActions
 	 */
 	public static function ensureEliminateScriptsOption(): void
 	{
+		$parentDef = OptionsDefinitions::getByCode('ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY');
+		if ($parentDef === null) {
+			return;
+		}
+
 		$byCode = [];
 		foreach (SettingsProvider::getOptions([]) as $row) {
 			$code = (string)($row['CODE_OPTION'] ?? '');
@@ -382,62 +368,48 @@ class OptionActions
 		}
 
 		$changed = false;
+		$parentCode = (string)$parentDef['CODE_OPTION'];
 
-		if (isset($byCode['ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY'])) {
-			$parent = $byCode['ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY'];
+		if (isset($byCode[$parentCode])) {
+			$parent = $byCode[$parentCode];
 			$needUpdate =
 				($parent['OPTION_TYPE'] ?? '') !== 'heading'
-				|| (string)($parent['NAME_OPTION'] ?? '') !== 'Устранить скрипты, блокирующие рендеринг'
-				|| (string)($parent['OPTION_ACTION'] ?? '') !== '';
+				|| (string)($parent['NAME_OPTION'] ?? '') !== (string)$parentDef['NAME_OPTION']
+				|| (string)($parent['OPTION_ACTION'] ?? '') !== (string)$parentDef['OPTION_ACTION'];
 
 			if ($needUpdate) {
 				GPSOptionsTable::update((int)$parent['ID'], [
 					'ACTIVE' => 'N',
-					'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
-					'OPTION_ACTION' => '',
+					'NAME_OPTION' => $parentDef['NAME_OPTION'],
+					'OPTION_ACTION' => $parentDef['OPTION_ACTION'],
 					'OPTION_TYPE' => 'heading',
-					'LIMITATION' => 'for-everyone',
+					'LIMITATION' => $parentDef['LIMITATION'],
 				]);
 				$changed = true;
 			}
 			$wasActive = (($parent['ACTIVE'] ?? 'N') === 'Y' && ($parent['OPTION_TYPE'] ?? '') === 'function');
 		} else {
-			GPSOptionsTable::add([
-				'ACTIVE' => 'N',
-				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_THAT_BLOCK_DISPLAY',
-				'NAME_OPTION' => 'Устранить скрипты, блокирующие рендеринг',
-				'OPTION_ACTION' => '',
-				'OPTION_TYPE' => 'heading',
-				'LIMITATION' => 'for-everyone',
-			]);
+			GPSOptionsTable::add(OptionsDefinitions::toDbRow($parentDef));
 			$wasActive = false;
 			$changed = true;
 		}
 
-		$children = [
-			[
-				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_GENERAL_JS',
-				'NAME_OPTION' => 'Общий JS',
-				'OPTION_ACTION' => 'eliminateScriptsGeneralJs',
-			],
-			[
-				'CODE_OPTION' => 'ELIMINATE_SCRIPTS_ASPRO_JS',
-				'NAME_OPTION' => 'Aspro Js',
-				'OPTION_ACTION' => 'eliminateScriptsAsproJs',
-			],
-		];
+		foreach (OptionsDefinitions::getChildCodes($parentCode) as $childCode) {
+			$childDef = OptionsDefinitions::getByCode($childCode);
+			if ($childDef === null) {
+				continue;
+			}
 
-		foreach ($children as $child) {
-			if (isset($byCode[$child['CODE_OPTION']])) {
-				$row = $byCode[$child['CODE_OPTION']];
+			if (isset($byCode[$childCode])) {
+				$row = $byCode[$childCode];
 				$needUpdate =
-					(string)($row['NAME_OPTION'] ?? '') !== $child['NAME_OPTION']
-					|| (string)($row['OPTION_ACTION'] ?? '') !== $child['OPTION_ACTION']
+					(string)($row['NAME_OPTION'] ?? '') !== (string)$childDef['NAME_OPTION']
+					|| (string)($row['OPTION_ACTION'] ?? '') !== (string)$childDef['OPTION_ACTION']
 					|| (string)($row['OPTION_TYPE'] ?? '') !== 'function';
 				if ($needUpdate) {
 					GPSOptionsTable::update((int)$row['ID'], [
-						'NAME_OPTION' => $child['NAME_OPTION'],
-						'OPTION_ACTION' => $child['OPTION_ACTION'],
+						'NAME_OPTION' => $childDef['NAME_OPTION'],
+						'OPTION_ACTION' => $childDef['OPTION_ACTION'],
 						'OPTION_TYPE' => 'function',
 					]);
 					$changed = true;
@@ -445,14 +417,9 @@ class OptionActions
 				continue;
 			}
 
-			GPSOptionsTable::add([
-				'ACTIVE' => $wasActive ? 'Y' : 'N',
-				'CODE_OPTION' => $child['CODE_OPTION'],
-				'NAME_OPTION' => $child['NAME_OPTION'],
-				'OPTION_ACTION' => $child['OPTION_ACTION'],
-				'OPTION_TYPE' => 'function',
-				'LIMITATION' => 'for-everyone',
-			]);
+			$childRow = OptionsDefinitions::toDbRow($childDef);
+			$childRow['ACTIVE'] = $wasActive ? 'Y' : 'N';
+			GPSOptionsTable::add($childRow);
 			$changed = true;
 		}
 
