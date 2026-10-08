@@ -39,11 +39,14 @@
 | `lib/ConnectedCssStyle.php` | ORM правил `<link>` (preload и т.п.) |
 | `lib/ConnectedJsScript.php` | ORM правил `<script>` (async/defer) |
 | `include.php` | Автозагрузка классов |
-| `admin/tools.googlepagespeed_options.php` | Админка: вкладки Опции / Тэг link / Тэг script (+ AJAX скан) |
+| `admin/tools.googlepagespeed_options.php` | Админка: Опции / Тэг link / Тэг script / Разброс PSI (+ AJAX) |
 | `admin/menu.php` | Пункт меню в «Настройки» |
-| `install/` | Установка / удаление, копия admin-скрипта |
+| `css/style.css`, `js/script.js` | Статика админки (источник в модуле) |
+| `install/` | Установка / удаление; копия admin-stub + css/js в `/bitrix/` |
 
 Админка: **Настройки → Инструменты для Google PageSpeed → Настройки**.
+
+**Статика админки:** не отдавать `/local/modules/...` (urlrewrite на проде → 404). Источник — `css/` / `js/` модуля; публичные пути `/bitrix/css|js/tools.googlepagespeed/`. `InstallFiles` копирует туда; в options **до** `prolog_admin_after` — sync по `filemtime` + `$APPLICATION->SetAdditionalCSS` / `AddHeadScript` / `AddHeadString` (`ToolsGpsAdminConfig`). В админке `CAdminPage::ShowCSS` берёт стили только из `GetCSSArray()` (заполняется `SetAdditionalCSS` → внутри Asset); голый `Asset::addCss` в `<head>` админки не попадает. Версию к файлу добавляет `GetAdditionalFileURL`. `script.js` — `DOMContentLoaded`.
 
 ## Карта классов и методов (v1.3.4)
 
@@ -153,7 +156,8 @@ Main::OnEndBufferContent
 
 ## Админка (UX)
 
-- Вкладки: **Опции**, **Тэг link**, **Тэг script**.
+- Вкладки: **Опции**, **Тэг link**, **Тэг script**, **Разброс PSI** (`lib/Psi/*`, AJAX `gps_psi_*`).
+- CSS/JS — только через Bitrix `Asset` и пути `/bitrix/css|js/tools.googlepagespeed/` (см. «Структура»).
 - На вкладках link/script — справочники (rel и defer/async) по макетам; кнопки «Добавить url» / «Применить» — классы `tools-gps-btn` + `adm-btn-save` (зелёный градиент Bitrix).
 - Кастомный CSS на `.tools-gps-filed` не должен перебивать фон `adm-btn-save` у кнопок сохранения.
 
