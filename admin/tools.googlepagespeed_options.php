@@ -390,6 +390,9 @@ elseif ($DB->GetErrorMessage() != "")
 
 			$keyOption = $optionsByCode[$code]['key'];
 			$valueOption = $optionsByCode[$code]['row'];
+			if (!empty($def['NAME_OPTION'])) {
+				$valueOption['NAME_OPTION'] = (string)$def['NAME_OPTION'];
+			}
 			$hint = (string)($def['HINT'] ?? '');
 
 			if (($def['OPTION_TYPE'] ?? '') === 'heading') {
@@ -405,10 +408,14 @@ elseif ($DB->GetErrorMessage() != "")
 					if (!isset($optionsByCode[$childCode])) {
 						continue;
 					}
-					$childDef = Tools\GooglePageSpeed\OptionsDefinitions::getByCode($childCode);
+					$childDef = Tools\GooglePageSpeed\OptionsDefinitions::getByCode($childCode) ?? [];
+					$childRow = $optionsByCode[$childCode]['row'];
+					if (!empty($childDef['NAME_OPTION'])) {
+						$childRow['NAME_OPTION'] = (string)$childDef['NAME_OPTION'];
+					}
 					$renderGpsOptionRow(
 						$optionsByCode[$childCode]['key'],
-						$optionsByCode[$childCode]['row'],
+						$childRow,
 						$limitation,
 						true,
 						(string)($childDef['HINT'] ?? '')
