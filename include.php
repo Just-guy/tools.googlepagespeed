@@ -16,5 +16,10 @@ Bitrix\Main\Loader::registerAutoloadClasses(
 		'Tools\\GooglePageSpeed\\GPSOptionsTable'       => 'lib/GPSOptions.php',
 		'Tools\\GooglePageSpeed\\ConnectedCssStyleTable' => 'lib/ConnectedCssStyle.php',
 		'Tools\\GooglePageSpeed\\ConnectedJsScriptTable' => 'lib/ConnectedJsScript.php',
+		'Tools\\GooglePageSpeed\\Psi\\Settings' => 'lib/Psi/Settings.php',
+		'Tools\\GooglePageSpeed\\Psi\\ApiClient' => 'lib/Psi/ApiClient.php',
+		'Tools\\GooglePageSpeed\\Psi\\VarianceStorage' => 'lib/Psi/VarianceStorage.php',
+		'Tools\\GooglePageSpeed\\Psi\\VarianceAggregator' => 'lib/Psi/VarianceAggregator.php',
+		'Tools\\GooglePageSpeed\\Psi\\AdminAjax' => 'lib/Psi/AdminAjax.php',
 	)
 );
