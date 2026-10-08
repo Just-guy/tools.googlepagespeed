@@ -28,6 +28,7 @@
 		border: 1px solid #e2e8f0;
 		border-radius: 8px;
 		box-sizing: border-box;
+		overflow: visible;
 	}
 
 	.tools-gps-options-panel__title {
@@ -325,6 +326,7 @@
 	.tools-gps-filed {
 		display: flex;
 		align-items: center;
+		overflow: visible;
 	}
 
 	.tools-gps-filed--heading .tools-gps-filed__name {
@@ -360,18 +362,100 @@
 
 	.tools-gps-filed__name {
 		flex-basis: 325px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.tools-gps-filed__name-text {
+		min-width: 0;
+	}
+
+	.tools-gps-filed__hint-wrap {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		flex-shrink: 0;
+	}
+
+	.tools-gps-filed__hint-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: #64748b;
+		cursor: help;
+		line-height: 0;
+		border-radius: 50%;
+		opacity: 0.9;
+	}
+
+	.tools-gps-filed__hint-btn:hover,
+	.tools-gps-filed__hint-btn:focus {
+		opacity: 1;
+		outline: none;
+	}
+
+	.tools-gps-filed__hint-btn:focus-visible {
+		box-shadow: 0 0 0 2px rgba(180, 83, 9, 0.35);
+	}
+
+	.tools-gps-filed__hint-btn--warn {
+		color: #d97706;
 	}
 
 	.tools-gps-filed__hint {
-		margin-top: 6px;
+		position: absolute;
+		left: 50%;
+		bottom: calc(100% + 8px);
+		z-index: 50;
+		width: max-content;
+		max-width: 320px;
+		padding: 8px 10px;
+		border-radius: 6px;
+		background: #1e293b;
+		color: #f8fafc;
 		font-size: 12px;
-		color: #64748b;
-		line-height: 1.4;
 		font-weight: 400;
+		line-height: 1.45;
+		text-align: left;
+		box-shadow: 0 8px 20px rgba(15, 23, 42, 0.22);
+		transform: translateX(-50%);
+		visibility: hidden;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.12s ease, visibility 0.12s ease;
+	}
+
+	.tools-gps-filed__hint::after {
+		content: '';
+		position: absolute;
+		top: 100%;
+		left: 50%;
+		margin-left: -5px;
+		border: 5px solid transparent;
+		border-top-color: #1e293b;
 	}
 
 	.tools-gps-filed__hint--warn {
-		color: #b45309;
+		background: #fffbeb;
+		color: #92400e;
+		border: 1px solid #fde68a;
+		box-shadow: 0 8px 20px rgba(146, 64, 14, 0.12);
+	}
+
+	.tools-gps-filed__hint--warn::after {
+		border-top-color: #fffbeb;
+	}
+
+	.tools-gps-filed__hint-wrap:hover .tools-gps-filed__hint,
+	.tools-gps-filed__hint-wrap:focus-within .tools-gps-filed__hint {
+		visibility: visible;
+		opacity: 1;
 	}
 
 	.tools-gps-btn.adm-btn-save {

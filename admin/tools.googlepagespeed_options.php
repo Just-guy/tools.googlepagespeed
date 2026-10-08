@@ -337,9 +337,26 @@ elseif ($DB->GetErrorMessage() != "")
 				<input type="hidden" name="OPTIONS[<?= $keyOption ?>][CODE_OPTION]" value="<?= htmlspecialcharsbx($code !== '' ? $code : 'GOOGLE_PS_OPTION') ?>" size="60">
 			</td>
 			<td class="tools-gps-filed__name">
-				<?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?>
-				<?php if ($hint !== '') { ?>
-					<div class="tools-gps-filed__hint tools-gps-filed__hint--warn"><?= htmlspecialcharsbx($hint) ?></div>
+				<span class="tools-gps-filed__name-text"><?= htmlspecialcharsbx($valueOption['NAME_OPTION']) ?></span>
+				<?php if ($hint !== '') {
+					$hintId = 'tools-gps-hint-' . preg_replace('/[^a-zA-Z0-9_-]/', '-', $code !== '' ? $code : (string)$keyOption);
+					?>
+					<span class="tools-gps-filed__hint-wrap">
+						<button
+							type="button"
+							class="tools-gps-filed__hint-btn tools-gps-filed__hint-btn--warn"
+							aria-label="Подсказка"
+							aria-describedby="<?= htmlspecialcharsbx($hintId) ?>"
+						>
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+								<circle cx="7" cy="7" r="7" fill="currentColor"/>
+								<path d="M7 4v3.5M7 9.5v.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+							</svg>
+						</button>
+						<span class="tools-gps-filed__hint tools-gps-filed__hint--warn" role="tooltip" id="<?= htmlspecialcharsbx($hintId) ?>">
+							<?= htmlspecialcharsbx($hint) ?>
+						</span>
+					</span>
 				<?php } ?>
 			</td>
 			<td class="tools-gps-filed__value">
